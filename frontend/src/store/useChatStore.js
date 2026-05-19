@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import api from "../lib/axios";
 import toast from "react-hot-toast";
+import useAuthStore from "./useAuthStore";
 
 /**
  * Chat store — manages conversations, messages, active chat, and online users.
@@ -16,6 +17,13 @@ const useChatStore = create((set, get) => ({
   isLoadingMessages: false,
   isSendingMessage: false,
   pagination: null,
+
+  // UI State to prevent prop drilling
+  showMobileSidebar: true,
+  showProfilePanel: false,
+
+  setShowMobileSidebar: (show) => set({ showMobileSidebar: show }),
+  setShowProfilePanel: (show) => set({ showProfilePanel: show }),
 
   /**
    * Fetch all conversations for the sidebar.
@@ -120,10 +128,18 @@ const useChatStore = create((set, get) => ({
    * Update the lastMessage and unread count in the conversation list.
    */
   updateConversationLastMessage: (conversationId, message) => {
+    const currentUser = useAuthStore.getState().user;
+
     set((state) => {
       const updated = state.conversations.map((conv) => {
         if (conv._id === conversationId) {
           const isActive = state.activeConversation?._id === conversationId;
+          
+          let newUnreadCount = { ...conv.unreadCount };
+          if (!isActive && currentUser) {
+            newUnreadCount[currentUser._id] = (newUnreadCount[currentUser._id] || 0) + 1;
+          }
+
           return {
             ...conv,
             lastMessage: {
@@ -133,8 +149,7 @@ const useChatStore = create((set, get) => ({
               createdAt: message.createdAt,
             },
             updatedAt: message.createdAt,
-            // Don't increment unread if this is the active conversation
-            ...(isActive ? {} : {}),
+            unreadCount: newUnreadCount,
           };
         }
         return conv;
@@ -152,11 +167,13 @@ const useChatStore = create((set, get) => ({
   markAsRead: async (conversationId) => {
     try {
       await api.put(`/messages/${conversationId}/read`);
-      // Reset unread count locally
+      const currentUser = useAuthStore.getState().user;
+      
+      // Reset unread count locally for the current user
       set((state) => ({
         conversations: state.conversations.map((conv) =>
-          conv._id === conversationId
-            ? { ...conv, unreadCount: { ...conv.unreadCount } }
+          conv._id === conversationId && currentUser
+            ? { ...conv, unreadCount: { ...conv.unreadCount, [currentUser._id]: 0 } }
             : conv
         ),
       }));
@@ -205,10 +222,44 @@ const useChatStore = create((set, get) => ({
     set((state) => ({
       messages: state.messages.map((msg) =>
         msg._id === messageId
-          ? { ...msg, isDeleted: true, content: "This message was deleted" }
+          ? { ...msg, isDeleted: true, content: "This message was deleted", reactions: [] }
           : msg
       ),
     }));
+  },
+
+  /**
+   * React to a message via API.
+   */
+  reactToMessage: async (messageId, emoji) => {
+    try {
+      const res = await api.post(`/messages/${messageId}/react`, { emoji });
+      set((state) => ({
+        messages: state.messages.map((msg) =>
+          msg._id === messageId
+            ? { ...msg, reactions: res.data.message.reactions }
+            : msg
+        ),
+      }));
+    } catch {
+      toast.error("Failed to add reaction");
+    }
+  },
+
+  /**
+   * Handle incoming message reaction event from Socket.IO.
+   */
+  handleMessageReaction: ({ messageId, conversationId, reactions }) => {
+    const { activeConversation } = get();
+    if (activeConversation?._id === conversationId) {
+      set((state) => ({
+        messages: state.messages.map((msg) =>
+          msg._id === messageId
+            ? { ...msg, reactions }
+            : msg
+        ),
+      }));
+    }
   },
 
   /**
@@ -272,6 +323,42 @@ const useChatStore = create((set, get) => ({
       toast.error(error.response?.data?.message || "Failed to create group");
       return null;
     }
+  },
+
+  /**
+   * Instantly update user profile across all conversations
+   */
+  updateUserInConversations: (updatedUser) => {
+    set((state) => ({
+      conversations: state.conversations.map((conv) => {
+        // Deep copy participants
+        const participants = conv.participants?.map(p => 
+          p._id === updatedUser.userId 
+            ? { ...p, fullName: updatedUser.fullName, avatar: updatedUser.avatar, about: updatedUser.about } 
+            : p
+        );
+
+        // Update group admin info if needed
+        const groupInfo = conv.groupInfo?.admin?._id === updatedUser.userId
+          ? { ...conv.groupInfo, admin: { ...conv.groupInfo.admin, fullName: updatedUser.fullName } }
+          : conv.groupInfo;
+
+        return { ...conv, participants, groupInfo };
+      }),
+      activeConversation: state.activeConversation 
+        ? {
+            ...state.activeConversation,
+            participants: state.activeConversation.participants?.map(p => 
+              p._id === updatedUser.userId 
+                ? { ...p, fullName: updatedUser.fullName, avatar: updatedUser.avatar, about: updatedUser.about } 
+                : p
+            ),
+            groupInfo: state.activeConversation.groupInfo?.admin?._id === updatedUser.userId
+              ? { ...state.activeConversation.groupInfo, admin: { ...state.activeConversation.groupInfo.admin, fullName: updatedUser.fullName } }
+              : state.activeConversation.groupInfo
+          }
+        : null
+    }));
   },
 
   /**

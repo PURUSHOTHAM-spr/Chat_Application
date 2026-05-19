@@ -5,6 +5,7 @@ import {
   markAsRead,
   deleteMessage,
   uploadFile,
+  reactToMessage,
 } from "../controllers/messageController.js";
 import protectRoute from "../middleware/auth.js";
 import { uploadLimiter } from "../middleware/rateLimiter.js";
@@ -18,5 +19,6 @@ router.post("/", sendMessage);
 router.put("/:conversationId/read", markAsRead);
 router.delete("/:id", deleteMessage);
 router.post("/upload", uploadLimiter, uploadFile);
+router.post("/:id/react", reactToMessage);
 
 export default router;

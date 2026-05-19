@@ -42,6 +42,14 @@ const messageSchema = new mongoose.Schema(
         readAt: { type: Date, default: Date.now },
       },
     ],
+    // Emoji reactions
+    reactions: [
+      {
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        emoji: { type: String, required: true },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
     isDeleted: {
       type: Boolean,
       default: false,

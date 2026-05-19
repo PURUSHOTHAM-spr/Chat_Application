@@ -14,10 +14,12 @@ import useAuthStore from "../../store/useAuthStore";
 import useNotificationStore from "../../store/useNotificationStore";
 import CreateGroupModal from "../group/CreateGroupModal";
 
+import useChatStore from "../../store/useChatStore";
+
 /**
  * Sidebar component — contains user header, search, and conversation list.
  */
-const Sidebar = ({ onProfileClick }) => {
+const Sidebar = () => {
   const { user } = useAuthStore();
   const { unreadCount, togglePanel } = useNotificationStore();
   const [searchQuery, setSearchQuery] = useState("");
@@ -29,7 +31,7 @@ const Sidebar = ({ onProfileClick }) => {
     <>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-light-2 dark:bg-dark-2 border-b border-gray-200 dark:border-dark-4">
-        <button onClick={onProfileClick} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+        <button onClick={() => useChatStore.getState().setShowProfilePanel(true)} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <Avatar src={user?.avatar} name={user?.fullName} size="md" />
         </button>
 
@@ -61,7 +63,7 @@ const Sidebar = ({ onProfileClick }) => {
               <div className="absolute right-0 top-12 w-48 bg-white dark:bg-dark-3 rounded-xl shadow-xl border border-gray-100 dark:border-dark-4 py-2 z-50 animate-fade-in">
                 <button
                   onClick={() => {
-                    onProfileClick();
+                    useChatStore.getState().setShowProfilePanel(true);
                     setShowMenu(false);
                   }}
                   className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-4 transition-colors"

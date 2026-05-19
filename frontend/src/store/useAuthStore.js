@@ -100,6 +100,20 @@ const useAuthStore = create((set) => ({
   },
 
   /**
+   * Force logout from socket event.
+   */
+  forceLogout: () => {
+    localStorage.removeItem("token");
+    disconnectSocket();
+    useChatStore.getState().clearChatStore();
+    useNotificationStore.getState().clearNotifications();
+    set({ user: null, token: null });
+    toast.error("You were logged out because you logged in from another device.", {
+      duration: 5000,
+    });
+  },
+
+  /**
    * Update user profile data in the store (after profile edit).
    */
   updateUser: (updatedUser) => {

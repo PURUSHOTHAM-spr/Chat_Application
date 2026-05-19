@@ -10,12 +10,15 @@ import { MESSAGE_STATUS } from "../../constants";
  */
 const MessageBubble = ({ message, isOwn }) => {
   const [showActions, setShowActions] = useState(false);
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef(null);
-  const { deleteMessage } = useChatStore();
+  const { deleteMessage, reactToMessage } = useChatStore();
+
+  const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
   
   const formatDuration = (seconds) => {
     const minutes = Math.floor(seconds / 60);
@@ -66,11 +69,39 @@ const MessageBubble = ({ message, isOwn }) => {
       onMouseLeave={() => setShowActions(false)}
     >
       <div className="relative max-w-[75%] md:max-w-[60%]">
-        {showActions && isOwn && (
-          <div className="absolute top-1 left-0 -translate-x-full pr-2 z-10">
-            <button onClick={() => deleteMessage(message._id)} className="p-1.5 bg-white dark:bg-dark-3 rounded-full shadow-md hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors" title="Delete">
-              <IoTrash className="w-3.5 h-3.5 text-red-500" />
+        {/* Actions Menu */}
+        {showActions && (
+          <div className={`absolute top-1 ${isOwn ? "left-0 -translate-x-full pr-2" : "right-0 translate-x-full pl-2"} z-10 flex gap-1`}>
+            {isOwn && (
+              <button onClick={() => deleteMessage(message._id)} className="p-1.5 bg-white dark:bg-dark-3 rounded-full shadow-md hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors" title="Delete">
+                <IoTrash className="w-3.5 h-3.5 text-red-500" />
+              </button>
+            )}
+            <button 
+              onClick={() => setShowReactionPicker(!showReactionPicker)}
+              className="p-1.5 bg-white dark:bg-dark-3 rounded-full shadow-md hover:bg-gray-50 dark:hover:bg-dark-4 transition-colors" 
+              title="React"
+            >
+              <span className="text-sm leading-none block">😀</span>
             </button>
+          </div>
+        )}
+
+        {/* Reaction Picker Popover */}
+        {showReactionPicker && (
+          <div className={`absolute -top-10 ${isOwn ? "right-0" : "left-0"} bg-white dark:bg-dark-3 shadow-xl rounded-full px-2 py-1 flex gap-1 z-20 animate-fade-in border border-gray-100 dark:border-dark-4`}>
+            {EMOJIS.map(emoji => (
+              <button
+                key={emoji}
+                onClick={() => {
+                  reactToMessage(message._id, emoji);
+                  setShowReactionPicker(false);
+                }}
+                className="hover:scale-125 hover:-translate-y-1 transition-all duration-200 text-xl px-1"
+              >
+                {emoji}
+              </button>
+            ))}
           </div>
         )}
 

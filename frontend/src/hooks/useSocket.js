@@ -3,6 +3,7 @@ import { getSocket } from "../lib/socket";
 import { SOCKET_EVENTS } from "../constants";
 import useChatStore from "../store/useChatStore";
 import useNotificationStore from "../store/useNotificationStore";
+import useAuthStore from "../store/useAuthStore";
 
 /**
  * Custom hook that sets up all Socket.IO event listeners.
@@ -20,9 +21,12 @@ const useSocket = () => {
     updateMessageReadStatus,
     handleMessageDeleted,
     fetchConversations,
+    updateUserInConversations,
+    handleMessageReaction,
   } = useChatStore();
 
   const { addNotification } = useNotificationStore();
+  const { forceLogout } = useAuthStore();
 
   useEffect(() => {
     const socket = getSocket();
@@ -79,6 +83,16 @@ const useSocket = () => {
       addNotification(notification);
     };
 
+    // --- Session events ---
+    const handleSessionExpired = () => {
+      forceLogout();
+    };
+
+    // --- Profile events ---
+    const handleUserUpdated = (updatedUser) => {
+      updateUserInConversations(updatedUser);
+    };
+
     // Register all listeners
     socket.on(SOCKET_EVENTS.MESSAGE_NEW, handleNewMessage);
     socket.on(SOCKET_EVENTS.MESSAGE_READ, handleMessageRead);
@@ -91,6 +105,9 @@ const useSocket = () => {
     socket.on(SOCKET_EVENTS.GROUP_UPDATED, handleGroupUpdated);
     socket.on(SOCKET_EVENTS.GROUP_REMOVED, handleGroupRemoved);
     socket.on(SOCKET_EVENTS.NOTIFICATION_NEW, handleNotification);
+    socket.on("session:expired", handleSessionExpired);
+    socket.on("user:updated", handleUserUpdated);
+    socket.on("message:reaction", handleMessageReaction);
 
     // Cleanup on unmount
     return () => {
@@ -105,6 +122,9 @@ const useSocket = () => {
       socket.off(SOCKET_EVENTS.GROUP_UPDATED, handleGroupUpdated);
       socket.off(SOCKET_EVENTS.GROUP_REMOVED, handleGroupRemoved);
       socket.off(SOCKET_EVENTS.NOTIFICATION_NEW, handleNotification);
+      socket.off("session:expired", handleSessionExpired);
+      socket.off("user:updated", handleUserUpdated);
+      socket.off("message:reaction", handleMessageReaction);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

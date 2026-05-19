@@ -2,6 +2,7 @@ import chatEvents from "./chatEvents.js";
 import typingEvents from "./typingEvents.js";
 import presenceEvents from "./presenceEvents.js";
 import Conversation from "../models/Conversation.js";
+import { getIO } from "../config/socket.js";
 
 /**
  * Main socket handler — orchestrates all socket event modules.
@@ -9,6 +10,10 @@ import Conversation from "../models/Conversation.js";
  */
 const socketHandler = async (socket) => {
   console.log(`🔌 User connected: ${socket.user.fullName} (${socket.userId})`);
+
+  // Force logout any existing sessions on other devices/tabs
+  const io = getIO();
+  io.to(socket.userId).emit("session:expired");
 
   // Join the user to their personal room (userId) for targeted messaging
   socket.join(socket.userId);

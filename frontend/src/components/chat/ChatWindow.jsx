@@ -7,8 +7,13 @@ import { useEffect } from "react";
 /**
  * Chat window — the right panel that shows the active conversation.
  */
-const ChatWindow = ({ onBack }) => {
-  const { activeConversation, markAsRead } = useChatStore();
+const ChatWindow = () => {
+  const { activeConversation, markAsRead, setShowMobileSidebar, setActiveConversation } = useChatStore();
+
+  const handleBack = () => {
+    setShowMobileSidebar(true);
+    setActiveConversation(null);
+  };
 
   // Mark messages as read when opening a conversation
   useEffect(() => {
@@ -19,7 +24,7 @@ const ChatWindow = ({ onBack }) => {
 
   return (
     <div className="flex flex-col h-full">
-      <ChatHeader onBack={onBack} />
+      <ChatHeader onBack={handleBack} />
 
       {/* Chat background with pattern */}
       <div className="flex-1 overflow-hidden chat-bg-pattern relative"

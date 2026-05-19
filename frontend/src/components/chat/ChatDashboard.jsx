@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Sidebar from "./Sidebar";
 import ChatWindow from "./ChatWindow";
 import EmptyChat from "./EmptyChat";
@@ -12,9 +12,14 @@ import NotificationsPanel from "../notifications/NotificationsPanel";
  * Responsive: on mobile, shows either sidebar or chat window.
  */
 const ChatDashboard = () => {
-  const { activeConversation, fetchConversations } = useChatStore();
-  const [showProfile, setShowProfile] = useState(false);
-  const [showMobileSidebar, setShowMobileSidebar] = useState(true);
+  const { 
+    activeConversation, 
+    fetchConversations, 
+    showMobileSidebar, 
+    setShowMobileSidebar, 
+    showProfilePanel, 
+    setShowProfilePanel 
+  } = useChatStore();
 
   // Initialize Socket.IO event listeners
   useSocket();
@@ -29,12 +34,7 @@ const ChatDashboard = () => {
     if (activeConversation) {
       setTimeout(() => setShowMobileSidebar(false), 0);
     }
-  }, [activeConversation]);
-
-  const handleBackToSidebar = () => {
-    setShowMobileSidebar(true);
-    useChatStore.getState().setActiveConversation(null);
-  };
+  }, [activeConversation, setShowMobileSidebar]);
 
   return (
     <div className="h-screen flex bg-[#d1d7db] dark:bg-dark-1 overflow-hidden">
@@ -50,9 +50,7 @@ const ChatDashboard = () => {
               showMobileSidebar ? "flex" : "hidden"
             } md:flex flex-col w-full md:w-[420px] lg:w-[480px] border-r border-gray-200 dark:border-dark-4 flex-shrink-0`}
           >
-            <Sidebar
-              onProfileClick={() => setShowProfile(true)}
-            />
+            <Sidebar />
           </div>
 
           {/* Chat area */}
@@ -62,7 +60,7 @@ const ChatDashboard = () => {
             } md:flex flex-col flex-1 min-w-0`}
           >
             {activeConversation ? (
-              <ChatWindow onBack={handleBackToSidebar} />
+              <ChatWindow />
             ) : (
               <EmptyChat />
             )}
@@ -71,8 +69,8 @@ const ChatDashboard = () => {
       </div>
 
       {/* Profile Settings Panel */}
-      {showProfile && (
-        <ProfileSettings onClose={() => setShowProfile(false)} />
+      {showProfilePanel && (
+        <ProfileSettings onClose={() => setShowProfilePanel(false)} />
       )}
 
       {/* Notifications Panel */}

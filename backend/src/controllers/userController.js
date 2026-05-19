@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import cloudinary from "../config/cloudinary.js";
+import { getIO } from "../config/socket.js";
 
 /**
  * Search users by name or email
@@ -53,6 +54,14 @@ export const updateProfile = async (req, res, next) => {
       runValidators: true,
     });
 
+    const io = getIO();
+    io.emit("user:updated", {
+      userId: user._id,
+      fullName: user.fullName,
+      avatar: user.avatar,
+      about: user.about,
+    });
+
     res.json({ success: true, user });
   } catch (error) {
     next(error);
@@ -85,6 +94,14 @@ export const updateAvatar = async (req, res, next) => {
       { avatar: result.secure_url },
       { new: true }
     );
+
+    const io = getIO();
+    io.emit("user:updated", {
+      userId: user._id,
+      fullName: user.fullName,
+      avatar: user.avatar,
+      about: user.about,
+    });
 
     res.json({ success: true, user });
   } catch (error) {
