@@ -34,11 +34,19 @@ const SearchUsers = ({ query, onClose }) => {
     return () => clearTimeout(debounceTimer);
   }, [query]);
 
+  const [isCreating, setIsCreating] = useState(false);
+
   const handleUserClick = async (userId) => {
-    const conversation = await createConversation(userId);
-    if (conversation) {
-      setActiveConversation(conversation);
-      onClose();
+    if (isCreating) return;
+    setIsCreating(true);
+    try {
+      const conversation = await createConversation(userId);
+      if (conversation) {
+        setActiveConversation(conversation);
+        onClose();
+      }
+    } finally {
+      setIsCreating(false);
     }
   };
 

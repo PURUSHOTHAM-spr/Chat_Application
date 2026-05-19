@@ -220,9 +220,23 @@ const useChatStore = create((set, get) => ({
       const { conversation, isNew } = res.data;
 
       if (isNew) {
-        set((state) => ({
-          conversations: [conversation, ...state.conversations],
-        }));
+        set((state) => {
+          // Check for existing by ID
+          const existsById = state.conversations.find((c) => c._id === conversation._id);
+          if (existsById) return state;
+
+          // Check for duplicate direct conversation by participants
+          if (conversation.type === "direct") {
+            const partIds = conversation.participants.map(p => p._id || p).sort().join('_');
+            const duplicate = state.conversations.find(c => 
+              c.type === "direct" && 
+              c.participants.map(p => p._id || p).sort().join('_') === partIds
+            );
+            if (duplicate) return state;
+          }
+
+          return { conversations: [conversation, ...state.conversations] };
+        });
       }
 
       return conversation;

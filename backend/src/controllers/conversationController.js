@@ -17,7 +17,23 @@ export const getConversations = async (req, res, next) => {
       .populate("groupInfo.admin", "fullName")
       .sort({ updatedAt: -1 });
 
-    res.json({ success: true, conversations });
+    // Deduplicate direct conversations to fix race condition bugs
+    const seenDirects = new Set();
+    const uniqueConversations = conversations.filter((conv) => {
+      if (conv.type === "direct") {
+        const participantIds = conv.participants
+          .map((p) => p._id.toString())
+          .sort()
+          .join("_");
+        if (seenDirects.has(participantIds)) {
+          return false;
+        }
+        seenDirects.add(participantIds);
+      }
+      return true;
+    });
+
+    res.json({ success: true, conversations: uniqueConversations });
   } catch (error) {
     next(error);
   }
