@@ -1,7 +1,7 @@
 // API and Socket configuration constants
 
-export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
-export const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:4000";
+export const API_URL = import.meta.env.VITE_API_URL || "https://chat-application-oi6a.onrender.com/api";
+export const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "https://chat-application-oi6a.onrender.com";
 
 // Socket event names
 export const SOCKET_EVENTS = {

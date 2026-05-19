@@ -11,7 +11,7 @@ let io;
 export const initializeSocket = (httpServer) => {
   io = new Server(httpServer, {
     cors: {
-      origin: process.env.CLIENT_URL || "http://localhost:5173",
+      origin: process.env.CLIENT_URL || "https://chat-application-swart-six.vercel.app",
       credentials: true,
     },
     pingTimeout: 60000,

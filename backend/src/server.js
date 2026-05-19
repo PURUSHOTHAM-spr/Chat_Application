@@ -4,17 +4,9 @@ import app from "./app.js";
 import connectDB from "./config/db.js";
 import { initializeSocket } from "./config/socket.js";
 import socketHandler from "./socket/socketHandler.js";
-import cors from "cors";
 
 const PORT = process.env.PORT || 4000;
 
-// Enable CORS for Express app (ensures requests from the client are allowed)
-app.use(
-  cors({
-    origin:"*",
-    credentials: true,
-  })
-);
 
 // Create HTTP server and attach Socket.IO
 const httpServer = createServer(app);
