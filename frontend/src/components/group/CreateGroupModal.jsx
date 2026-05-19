@@ -47,8 +47,8 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
       if (isSelected) {
         return prev.filter((u) => u._id !== user._id);
       } else {
-        if (prev.length >= 14) {
-          import("react-hot-toast").then(m => m.default.error("Group capacity is limited to 15 members"));
+        if (prev.length >= 99) {
+          import("react-hot-toast").then(m => m.default.error("Group capacity is limited to 100 members"));
           return prev;
         }
         return [...prev, user];

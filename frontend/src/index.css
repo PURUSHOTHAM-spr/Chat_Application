@@ -12,7 +12,7 @@
   }
 
   body {
-    @apply font-sans antialiased;
+    @apply font-sans antialiased text-gray-900 dark:text-gray-100;
     overflow: hidden;
     height: 100vh;
   }

@@ -56,18 +56,24 @@ const MessageInput = () => {
 
     if (preview) {
       setIsUploading(true);
-      const result = await uploadFile(preview.data);
-      if (result) {
-        await sendMessage({
-          conversationId: activeConversation._id,
-          content: result.url,
-          type: preview.type,
-          fileName: preview.name,
-          fileSize: preview.size,
-        });
+      try {
+        const result = await uploadFile(preview.data);
+        if (result) {
+          await sendMessage({
+            conversationId: activeConversation._id,
+            content: result.url,
+            type: preview.type,
+            fileName: preview.name,
+            fileSize: preview.size,
+          });
+        }
+      } catch (error) {
+        console.error("Upload error:", error);
+        toast.error("Failed to upload file. It might be too large.");
+      } finally {
+        setPreview(null);
+        setIsUploading(false);
       }
-      setPreview(null);
-      setIsUploading(false);
     } else {
       await sendMessage({
         conversationId: activeConversation._id,
@@ -91,6 +97,28 @@ const MessageInput = () => {
   const handleInputChange = (e) => {
     setText(e.target.value);
     startTyping();
+  };
+
+  const handlePaste = async (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf("image") !== -1 || items[i].type.indexOf("application") !== -1) {
+        const file = items[i].getAsFile();
+        if (!file) continue;
+        
+        if (file.size > 10 * 1024 * 1024) {
+          toast.error("Pasted file size must be under 10MB");
+          return;
+        }
+        
+        const type = items[i].type.indexOf("image") !== -1 ? "image" : "file";
+        const base64 = await fileToBase64(file);
+        setPreview({ data: base64, type, name: file.name || `pasted_${type}`, size: file.size });
+        break; // Only handle the first pasted file
+      }
+    }
   };
 
   const handleEmojiClick = (emojiData) => {
@@ -272,6 +300,7 @@ const MessageInput = () => {
             value={text}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             placeholder="Type a message"
             rows={1}
             className="w-full px-4 py-3 bg-white dark:bg-dark-3 rounded-2xl text-sm text-gray-900 dark:text-white placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-whatsapp-500/30 max-h-32 overflow-y-auto transition-all"

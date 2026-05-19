@@ -94,9 +94,9 @@ export const createGroupConversation = async (req, res, next) => {
       });
     }
 
-    if (participants.length > 14) {
+    if (participants.length > 99) {
       return res.status(400).json({
-        message: "Group capacity is limited to 15 members",
+        message: "Group capacity is limited to 100 members",
       });
     }
 
@@ -204,8 +204,8 @@ export const addGroupMembers = async (req, res, next) => {
       (m) => !conversation.participants.map((p) => p.toString()).includes(m)
     );
 
-    if (conversation.participants.length + newMembers.length > 15) {
-      return res.status(400).json({ message: "Adding these members would exceed the 15 member limit" });
+    if (conversation.participants.length + newMembers.length > 100) {
+      return res.status(400).json({ message: "Adding these members would exceed the 100 member limit" });
     }
 
     conversation.participants.push(...newMembers);

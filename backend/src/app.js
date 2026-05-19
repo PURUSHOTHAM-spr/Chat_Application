@@ -27,8 +27,8 @@ app.use(
 );
 
 // Body parsing — increased limit for base64 file uploads
-app.use(express.json({ limit: "15mb" }));
-app.use(express.urlencoded({ extended: true, limit: "15mb" }));
+app.use(express.json({ limit: "25mb" }));
+app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 app.use(cookieParser());
 
 // General rate limiting
