@@ -2,6 +2,7 @@ import Avatar from "../common/Avatar";
 import Badge from "../common/Badge";
 import useChatStore from "../../store/useChatStore";
 import useAuthStore from "../../store/useAuthStore";
+import { IoCheckmark, IoCheckmarkDone } from "react-icons/io5";
 import {
   getConversationName,
   getConversationAvatar,
@@ -78,7 +79,7 @@ const ChatListItem = ({ conversation, isActive, onClick }) => {
 
         <div className="flex items-center justify-between mt-0.5">
           <p
-            className={`text-xs truncate ${
+            className={`text-xs truncate flex items-center gap-1 ${
               isTyping
                 ? "text-whatsapp-500 font-medium italic"
                 : unreadCount > 0
@@ -86,6 +87,17 @@ const ChatListItem = ({ conversation, isActive, onClick }) => {
                 : "text-gray-400 dark:text-gray-500"
             }`}
           >
+            {!isTyping && lastMessage?.sender === user?._id && (
+              <span className="flex-shrink-0">
+                {lastMessage.status === "read" ? (
+                  <IoCheckmarkDone className="w-4 h-4 text-blue-500" />
+                ) : lastMessage.status === "delivered" ? (
+                  <IoCheckmarkDone className="w-4 h-4" />
+                ) : (
+                  <IoCheckmark className="w-4 h-4" />
+                )}
+              </span>
+            )}
             {truncate(preview, 45) || "Start a conversation"}
           </p>
           <Badge count={unreadCount} />
