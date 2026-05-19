@@ -1,0 +1,49 @@
+import ChatHeader from "./ChatHeader";
+import MessageList from "./MessageList";
+import MessageInput from "./MessageInput";
+import useChatStore from "../../store/useChatStore";
+import { useEffect } from "react";
+
+/**
+ * Chat window — the right panel that shows the active conversation.
+ */
+const ChatWindow = ({ onBack }) => {
+  const { activeConversation, markAsRead } = useChatStore();
+
+  // Mark messages as read when opening a conversation
+  useEffect(() => {
+    if (activeConversation?._id) {
+      markAsRead(activeConversation._id);
+    }
+  }, [activeConversation?._id, markAsRead]);
+
+  return (
+    <div className="flex flex-col h-full">
+      <ChatHeader onBack={onBack} />
+
+      {/* Chat background with pattern */}
+      <div className="flex-1 overflow-hidden chat-bg-pattern relative"
+        style={
+          activeConversation?.wallpaper
+            ? {
+                backgroundImage: `url(${activeConversation.wallpaper})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }
+            : {}
+        }
+      >
+        {activeConversation?.wallpaper && (
+          <div className="absolute inset-0 bg-black/20 dark:bg-black/40" />
+        )}
+        <div className="relative h-full">
+          <MessageList />
+        </div>
+      </div>
+
+      <MessageInput />
+    </div>
+  );
+};
+
+export default ChatWindow;

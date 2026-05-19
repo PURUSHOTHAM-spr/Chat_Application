@@ -1,0 +1,333 @@
+import { create } from "zustand";
+import api from "../lib/axios";
+import toast from "react-hot-toast";
+
+/**
+ * Chat store — manages conversations, messages, active chat, and online users.
+ * This is the core state for the entire chat interface.
+ */
+const useChatStore = create((set, get) => ({
+  conversations: [],
+  activeConversation: null,
+  messages: [],
+  onlineUsers: new Set(),
+  typingUsers: {},       // { conversationId: [{ userId, userName }] }
+  isLoadingConversations: false,
+  isLoadingMessages: false,
+  isSendingMessage: false,
+  pagination: null,
+
+  /**
+   * Fetch all conversations for the sidebar.
+   */
+  fetchConversations: async () => {
+    set({ isLoadingConversations: true });
+    try {
+      const res = await api.get("/conversations");
+      set({ conversations: res.data.conversations, isLoadingConversations: false });
+    } catch (error) {
+      console.error("Failed to fetch conversations:", error);
+      set({ isLoadingConversations: false });
+    }
+  },
+
+  /**
+   * Set the active conversation and load its messages.
+   */
+  setActiveConversation: async (conversation) => {
+    set({ activeConversation: conversation, messages: [], pagination: null });
+    if (conversation) {
+      await get().fetchMessages(conversation._id);
+    }
+  },
+
+  /**
+   * Fetch paginated messages for a conversation.
+   */
+  fetchMessages: async (conversationId, page = 1) => {
+    set({ isLoadingMessages: true });
+    try {
+      const res = await api.get(`/messages/${conversationId}?page=${page}&limit=50`);
+      const { messages: newMessages, pagination } = res.data;
+
+      if (page === 1) {
+        set({ messages: newMessages, pagination, isLoadingMessages: false });
+      } else {
+        // Prepend older messages for infinite scroll
+        set((state) => ({
+          messages: [...newMessages, ...state.messages],
+          pagination,
+          isLoadingMessages: false,
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to fetch messages:", error);
+      set({ isLoadingMessages: false });
+    }
+  },
+
+  /**
+   * Load more (older) messages for infinite scroll.
+   */
+  loadMoreMessages: async () => {
+    const { pagination, activeConversation } = get();
+    if (!pagination?.hasMore || !activeConversation) return;
+    await get().fetchMessages(activeConversation._id, pagination.page + 1);
+  },
+
+  /**
+   * Send a text message via REST API.
+   */
+  sendMessage: async (data) => {
+    set({ isSendingMessage: true });
+    try {
+      const res = await api.post("/messages", data);
+      // Add message to local state immediately
+      set((state) => ({
+        messages: [...state.messages, res.data.message],
+        isSendingMessage: false,
+      }));
+
+      // Update lastMessage in conversation list
+      get().updateConversationLastMessage(data.conversationId, res.data.message);
+      return res.data.message;
+    } catch (error) {
+      console.error("Failed to send message:", error);
+      toast.error("Failed to send message");
+      set({ isSendingMessage: false });
+      return null;
+    }
+  },
+
+  /**
+   * Add a new incoming message from Socket.IO.
+   */
+  addIncomingMessage: (message, conversationId) => {
+    const { activeConversation } = get();
+
+    // If this message is for the active conversation, add it to messages
+    if (activeConversation?._id === conversationId) {
+      set((state) => ({
+        messages: [...state.messages, message],
+      }));
+    }
+
+    // Update conversation list
+    get().updateConversationLastMessage(conversationId, message);
+  },
+
+  /**
+   * Update the lastMessage and unread count in the conversation list.
+   */
+  updateConversationLastMessage: (conversationId, message) => {
+    set((state) => {
+      const updated = state.conversations.map((conv) => {
+        if (conv._id === conversationId) {
+          const isActive = state.activeConversation?._id === conversationId;
+          return {
+            ...conv,
+            lastMessage: {
+              content: message.type === "text" ? message.content : `📎 ${message.type}`,
+              sender: message.sender,
+              type: message.type,
+              createdAt: message.createdAt,
+            },
+            updatedAt: message.createdAt,
+            // Don't increment unread if this is the active conversation
+            ...(isActive ? {} : {}),
+          };
+        }
+        return conv;
+      });
+
+      // Sort by most recent
+      updated.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+      return { conversations: updated };
+    });
+  },
+
+  /**
+   * Mark messages as read for a conversation.
+   */
+  markAsRead: async (conversationId) => {
+    try {
+      await api.put(`/messages/${conversationId}/read`);
+      // Reset unread count locally
+      set((state) => ({
+        conversations: state.conversations.map((conv) =>
+          conv._id === conversationId
+            ? { ...conv, unreadCount: { ...conv.unreadCount } }
+            : conv
+        ),
+      }));
+    } catch (error) {
+      console.error("Failed to mark as read:", error);
+    }
+  },
+
+  /**
+   * Update message read status from Socket.IO event.
+   */
+  updateMessageReadStatus: (conversationId) => {
+    const { activeConversation } = get();
+    if (activeConversation?._id === conversationId) {
+      set((state) => ({
+        messages: state.messages.map((msg) => ({
+          ...msg,
+          status: "read",
+        })),
+      }));
+    }
+  },
+
+  /**
+   * Handle message deletion.
+   */
+  deleteMessage: async (messageId) => {
+    try {
+      await api.delete(`/messages/${messageId}`);
+      set((state) => ({
+        messages: state.messages.map((msg) =>
+          msg._id === messageId
+            ? { ...msg, isDeleted: true, content: "This message was deleted" }
+            : msg
+        ),
+      }));
+    } catch {
+      toast.error("Failed to delete message");
+    }
+  },
+
+  /**
+   * Handle incoming message deletion event.
+   */
+  handleMessageDeleted: (messageId) => {
+    set((state) => ({
+      messages: state.messages.map((msg) =>
+        msg._id === messageId
+          ? { ...msg, isDeleted: true, content: "This message was deleted" }
+          : msg
+      ),
+    }));
+  },
+
+  /**
+   * Create or get a direct conversation with a user.
+   */
+  createConversation: async (participantId) => {
+    try {
+      const res = await api.post("/conversations", { participantId });
+      const { conversation, isNew } = res.data;
+
+      if (isNew) {
+        set((state) => ({
+          conversations: [conversation, ...state.conversations],
+        }));
+      }
+
+      return conversation;
+    } catch {
+      toast.error("Failed to create conversation");
+      return null;
+    }
+  },
+
+  /**
+   * Add a new conversation from Socket.IO event.
+   */
+  addConversation: (conversation) => {
+    set((state) => {
+      const exists = state.conversations.find((c) => c._id === conversation._id);
+      if (exists) return {};
+      return { conversations: [conversation, ...state.conversations] };
+    });
+  },
+
+  /**
+   * Create a group conversation.
+   */
+  createGroup: async (data) => {
+    try {
+      const res = await api.post("/conversations/group", data);
+      set((state) => ({
+        conversations: [res.data.conversation, ...state.conversations],
+      }));
+      toast.success("Group created!");
+      return res.data.conversation;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to create group");
+      return null;
+    }
+  },
+
+  /**
+   * Upload a file and return the URL.
+   */
+  uploadFile: async (base64File) => {
+    try {
+      const res = await api.post("/messages/upload", { file: base64File });
+      return res.data;
+    } catch (error) {
+      console.error("Upload error details:", error.response?.data || error.message);
+      toast.error(error.response?.data?.message || "Failed to upload file");
+      return null;
+    }
+  },
+
+  // --- Online/Offline tracking ---
+  setUserOnline: (userId) => {
+    set((state) => {
+      const newSet = new Set(state.onlineUsers);
+      newSet.add(userId);
+      return { onlineUsers: newSet };
+    });
+  },
+
+  setUserOffline: (userId) => {
+    set((state) => {
+      const newSet = new Set(state.onlineUsers);
+      newSet.delete(userId);
+      return { onlineUsers: newSet };
+    });
+  },
+
+  // --- Typing indicators ---
+  setTypingUser: (conversationId, userId, userName) => {
+    set((state) => {
+      const current = state.typingUsers[conversationId] || [];
+      if (current.find((u) => u.userId === userId)) return {};
+      return {
+        typingUsers: {
+          ...state.typingUsers,
+          [conversationId]: [...current, { userId, userName }],
+        },
+      };
+    });
+  },
+
+  removeTypingUser: (conversationId, userId) => {
+    set((state) => {
+      const current = state.typingUsers[conversationId] || [];
+      return {
+        typingUsers: {
+          ...state.typingUsers,
+          [conversationId]: current.filter((u) => u.userId !== userId),
+        },
+      };
+    });
+  },
+
+  // --- Reset Store ---
+  clearChatStore: () => {
+    set({
+      conversations: [],
+      activeConversation: null,
+      messages: [],
+      onlineUsers: new Set(),
+      typingUsers: {},
+      pagination: null,
+    });
+  },
+}));
+
+export default useChatStore;

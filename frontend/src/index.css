@@ -1,0 +1,167 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply font-sans antialiased;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* Custom scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-400/40 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400/60;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    @apply bg-gray-600/40;
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-600/60;
+  }
+}
+
+@layer components {
+  /* Glassmorphism effect */
+  .glass {
+    @apply bg-white/70 dark:bg-dark-2/70 backdrop-blur-xl border border-white/20 dark:border-white/10;
+  }
+
+  .glass-heavy {
+    @apply bg-white/90 dark:bg-dark-2/90 backdrop-blur-2xl border border-white/30 dark:border-white/10;
+  }
+
+  /* Chat background pattern */
+  .chat-bg-pattern {
+    background-color: #E5DDD5;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c9c9c9' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  .dark .chat-bg-pattern {
+    background-color: #0B141A;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+
+  /* Message bubble tails */
+  .bubble-tail-out {
+    position: relative;
+  }
+
+  .bubble-tail-out::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: -8px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid #D9FDD3;
+    border-bottom: 8px solid transparent;
+  }
+
+  .dark .bubble-tail-out::before {
+    border-left-color: #005C4B;
+  }
+
+  .bubble-tail-in {
+    position: relative;
+  }
+
+  .bubble-tail-in::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -8px;
+    width: 0;
+    height: 0;
+    border-right: 8px solid #FFFFFF;
+    border-bottom: 8px solid transparent;
+  }
+
+  .dark .bubble-tail-in::before {
+    border-right-color: #1F2C34;
+  }
+
+  /* Typing animation dots */
+  .typing-dot {
+    @apply w-2 h-2 rounded-full bg-gray-500 dark:bg-gray-400;
+    animation: typing 1.4s infinite;
+  }
+
+  .typing-dot:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+
+  .typing-dot:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+
+  /* Status ticks */
+  .tick-sent {
+    @apply text-gray-400;
+  }
+
+  .tick-delivered {
+    @apply text-gray-400;
+  }
+
+  .tick-read {
+    @apply text-blue-500;
+  }
+
+  /* Skeleton loading animation */
+  .skeleton {
+    @apply bg-gray-200 dark:bg-dark-4 rounded animate-pulse;
+  }
+
+  /* WhatsApp header background */
+  .header-gradient {
+    @apply bg-[#00a884] dark:bg-dark-1;
+  }
+
+  /* Hover lift effect */
+  .hover-lift {
+    @apply transition-all duration-200 hover:translate-y-[-2px] hover:shadow-lg;
+  }
+
+  /* Input focus ring */
+  .input-focus {
+    @apply focus:outline-none focus:ring-2 focus:ring-whatsapp-500/50 focus:border-whatsapp-500 transition-all duration-200;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .text-shadow {
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+}
