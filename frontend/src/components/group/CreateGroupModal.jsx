@@ -42,11 +42,18 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
   };
 
   const toggleUser = (user) => {
-    setSelectedUsers((prev) =>
-      prev.find((u) => u._id === user._id)
-        ? prev.filter((u) => u._id !== user._id)
-        : [...prev, user]
-    );
+    setSelectedUsers((prev) => {
+      const isSelected = prev.find((u) => u._id === user._id);
+      if (isSelected) {
+        return prev.filter((u) => u._id !== user._id);
+      } else {
+        if (prev.length >= 14) {
+          import("react-hot-toast").then(m => m.default.error("Group capacity is limited to 15 members"));
+          return prev;
+        }
+        return [...prev, user];
+      }
+    });
   };
 
   const handleCreate = async () => {

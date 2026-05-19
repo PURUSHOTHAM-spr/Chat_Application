@@ -29,9 +29,14 @@ const useAuthStore = create((set) => ({
       const res = await api.get("/auth/check");
       set({ user: res.data.user, token, isCheckingAuth: false });
       connectSocket(token);
-    } catch {
-      localStorage.removeItem("token");
-      set({ user: null, token: null, isCheckingAuth: false });
+    } catch (error) {
+      if (error.response?.status === 401) {
+        localStorage.removeItem("token");
+        set({ user: null, token: null, isCheckingAuth: false });
+      } else {
+        // Do not clear token if rate limited or offline
+        set({ isCheckingAuth: false });
+      }
     }
   },
 
