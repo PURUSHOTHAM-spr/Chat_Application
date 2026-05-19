@@ -20,6 +20,8 @@ const ChatHeader = ({ onBack }) => {
   const [showProfile, setShowProfile] = useState(false);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
 
+    const [showMenu, setShowMenu] = useState(false);
+
   if (!activeConversation) return null;
 
   const isGroup = activeConversation.type === "group";
@@ -51,9 +53,24 @@ const ChatHeader = ({ onBack }) => {
     }
   };
 
+  const handleClearChat = async () => {
+    if (window.confirm("Are you sure you want to clear all messages in this chat?")) {
+      await useChatStore.getState().clearChat(activeConversation._id);
+      setShowMenu(false);
+    }
+  };
+
+  const handleDeleteChat = async () => {
+    if (window.confirm("Are you sure you want to delete this chat?")) {
+      await useChatStore.getState().deleteConversation(activeConversation._id);
+      setShowMenu(false);
+      onBack();
+    }
+  };
+
   return (
     <>
-      <div className="flex items-center gap-3 px-4 py-3 bg-light-2 dark:bg-dark-2 border-b border-gray-200 dark:border-dark-4">
+      <div className="flex items-center gap-3 px-4 py-3 bg-light-2 dark:bg-dark-2 border-b border-gray-200 dark:border-dark-4 relative">
         {/* Back button (mobile) */}
         <button
           onClick={onBack}
@@ -65,7 +82,7 @@ const ChatHeader = ({ onBack }) => {
         {/* Avatar & Info */}
         <button
           onClick={handleHeaderClick}
-          className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity"
+          className="flex items-center gap-3 flex-1 min-w-0 hover:opacity-80 transition-opacity text-left"
         >
           <Avatar
             src={
@@ -100,13 +117,45 @@ const ChatHeader = ({ onBack }) => {
           <button className="p-2.5 rounded-full hover:bg-gray-200 dark:hover:bg-dark-4 transition-colors">
             <IoSearch className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           </button>
-          <button
-            onClick={handleHeaderClick}
-            className="p-2.5 rounded-full hover:bg-gray-200 dark:hover:bg-dark-4 transition-colors"
-          >
-            <IoEllipsisVertical className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-2.5 rounded-full hover:bg-gray-200 dark:hover:bg-dark-4 transition-colors"
+            >
+              <IoEllipsisVertical className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+            </button>
+            {showMenu && (
+              <div className="absolute right-0 top-12 w-48 bg-white dark:bg-dark-3 rounded-xl shadow-xl border border-gray-100 dark:border-dark-4 py-2 z-50 animate-fade-in">
+                <button
+                  onClick={() => {
+                    handleHeaderClick();
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-4 transition-colors"
+                >
+                  Contact Info
+                </button>
+                <button
+                  onClick={handleClearChat}
+                  className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-4 transition-colors"
+                >
+                  Clear Chat
+                </button>
+                <button
+                  onClick={handleDeleteChat}
+                  className="w-full px-4 py-2.5 text-left text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
+                >
+                  Delete Chat
+                </button>
+              </div>
+            )}
+          </div>
         </div>
+        
+        {/* Menu Backdrop */}
+        {showMenu && (
+          <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+        )}
       </div>
 
       {/* Profile Modal for direct chats */}

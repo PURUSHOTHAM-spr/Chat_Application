@@ -50,6 +50,13 @@ const messageSchema = new mongoose.Schema(
         createdAt: { type: Date, default: Date.now },
       },
     ],
+    // Users who have deleted this message for themselves
+    deletedFor: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
     isDeleted: {
       type: Boolean,
       default: false,

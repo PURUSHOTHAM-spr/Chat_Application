@@ -11,6 +11,7 @@ import { MESSAGE_STATUS } from "../../constants";
 const MessageBubble = ({ message, isOwn }) => {
   const [showActions, setShowActions] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [showDeleteMenu, setShowDeleteMenu] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -72,11 +73,29 @@ const MessageBubble = ({ message, isOwn }) => {
         {/* Actions Menu */}
         {showActions && (
           <div className={`absolute top-1 ${isOwn ? "left-0 -translate-x-full pr-2" : "right-0 translate-x-full pl-2"} z-10 flex gap-1`}>
-            {isOwn && (
-              <button onClick={() => deleteMessage(message._id)} className="p-1.5 bg-white dark:bg-dark-3 rounded-full shadow-md hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors" title="Delete">
+            <div className="relative">
+              <button onClick={() => setShowDeleteMenu(!showDeleteMenu)} className="p-1.5 bg-white dark:bg-dark-3 rounded-full shadow-md hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors" title="Delete">
                 <IoTrash className="w-3.5 h-3.5 text-red-500" />
               </button>
-            )}
+              {showDeleteMenu && (
+                <div className={`absolute top-8 ${isOwn ? "right-0" : "left-0"} bg-white dark:bg-dark-3 shadow-xl rounded-xl border border-gray-100 dark:border-dark-4 py-1 flex flex-col z-20 w-36 animate-fade-in`}>
+                  <button 
+                    onClick={() => { deleteMessage(message._id, "me"); setShowDeleteMenu(false); }}
+                    className="text-xs text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-dark-4 text-gray-700 dark:text-gray-300"
+                  >
+                    Delete for me
+                  </button>
+                  {isOwn && (
+                    <button 
+                      onClick={() => { deleteMessage(message._id, "everyone"); setShowDeleteMenu(false); }}
+                      className="text-xs text-left px-3 py-2 hover:bg-red-50 dark:hover:bg-red-500/10 text-red-500"
+                    >
+                      Delete for everyone
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
             <button 
               onClick={() => setShowReactionPicker(!showReactionPicker)}
               className="p-1.5 bg-white dark:bg-dark-3 rounded-full shadow-md hover:bg-gray-50 dark:hover:bg-dark-4 transition-colors" 
@@ -190,6 +209,23 @@ const MessageBubble = ({ message, isOwn }) => {
             {renderTicks()}
           </div>
         </div>
+
+        {/* Render Reactions */}
+        {message.reactions && message.reactions.length > 0 && (
+          <div className={`absolute -bottom-3 ${isOwn ? "right-2" : "left-2"} bg-white dark:bg-dark-3 border border-gray-100 dark:border-dark-4 shadow-sm rounded-full px-1.5 py-0.5 flex gap-1 items-center z-10 text-[11px]`}>
+            {Object.entries(
+              message.reactions.reduce((acc, curr) => {
+                acc[curr.emoji] = (acc[curr.emoji] || 0) + 1;
+                return acc;
+              }, {})
+            ).map(([emoji, count]) => (
+              <span key={emoji} className="flex items-center gap-0.5">
+                <span>{emoji}</span>
+                {count > 1 && <span className="text-gray-500 dark:text-gray-400 font-medium">{count}</span>}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

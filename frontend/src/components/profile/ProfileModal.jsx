@@ -2,14 +2,18 @@ import Modal from "../common/Modal";
 import Avatar from "../common/Avatar";
 import { formatLastSeen } from "../../lib/utils";
 import useChatStore from "../../store/useChatStore";
+import useAuthStore from "../../store/useAuthStore";
+import { IoBan } from "react-icons/io5";
 
 /**
  * Profile modal — shows a user's profile information.
  */
 const ProfileModal = ({ user, isOpen, onClose }) => {
   const { onlineUsers } = useChatStore();
+  const { user: currentUser, toggleBlockUser } = useAuthStore();
   if (!user) return null;
   const isOnline = onlineUsers.has(user._id);
+  const isBlocked = currentUser?.blockedUsers?.includes(user._id);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Contact Info" size="sm">
@@ -29,6 +33,18 @@ const ProfileModal = ({ user, isOpen, onClose }) => {
             <p className={`text-sm font-medium ${isOnline ? "text-whatsapp-500" : "text-gray-500"}`}>
               {isOnline ? "Online" : `Last seen ${formatLastSeen(user.lastSeen)}`}
             </p>
+          </div>
+          
+          <div className="pt-4 border-t border-gray-100 dark:border-dark-4">
+            <button
+              onClick={async () => {
+                await toggleBlockUser(user._id);
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors"
+            >
+              <IoBan className="w-5 h-5" />
+              {isBlocked ? "Unblock User" : "Block User"}
+            </button>
           </div>
         </div>
       </div>

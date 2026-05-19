@@ -20,6 +20,14 @@ export const getConversations = async (req, res, next) => {
     // Deduplicate direct conversations to fix race condition bugs
     const seenDirects = new Set();
     const uniqueConversations = conversations.filter((conv) => {
+      // Check if deleted for this user
+      const deletedAt = conv.deletedAt?.get(req.user._id.toString());
+      if (deletedAt) {
+        if (!conv.lastMessage || new Date(conv.lastMessage.createdAt) <= new Date(deletedAt)) {
+          return false;
+        }
+      }
+
       if (conv.type === "direct") {
         const participantIds = conv.participants
           .map((p) => p._id.toString())
@@ -303,6 +311,31 @@ export const setWallpaper = async (req, res, next) => {
     }
 
     res.json({ success: true, conversation });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Delete a conversation (hides it for the user)
+ * DELETE /api/conversations/:id
+ */
+export const deleteConversation = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const conversation = await Conversation.findById(id);
+
+    if (!conversation) {
+      return res.status(404).json({ message: "Conversation not found" });
+    }
+
+    // Initialize Map if missing (mongoose older versions might need this)
+    if (!conversation.deletedAt) conversation.deletedAt = new Map();
+    
+    conversation.deletedAt.set(req.user._id.toString(), new Date());
+    await conversation.save();
+
+    res.json({ success: true, message: "Conversation deleted" });
   } catch (error) {
     next(error);
   }

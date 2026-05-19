@@ -7,6 +7,7 @@ import {
   addGroupMembers,
   removeGroupMember,
   setWallpaper,
+  deleteConversation,
 } from "../controllers/conversationController.js";
 import protectRoute from "../middleware/auth.js";
 
@@ -21,5 +22,6 @@ router.put("/:id/group", updateGroup);
 router.post("/:id/members", addGroupMembers);
 router.delete("/:id/members/:userId", removeGroupMember);
 router.put("/:id/wallpaper", setWallpaper);
+router.delete("/:id", deleteConversation);
 
 export default router;

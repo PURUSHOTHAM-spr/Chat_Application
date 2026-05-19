@@ -24,8 +24,18 @@ export const getMessages = async (req, res, next) => {
       return res.status(404).json({ message: "Conversation not found" });
     }
 
-    const totalMessages = await Message.countDocuments({ conversationId });
-    const messages = await Message.find({ conversationId })
+    const clearedAt = conversation.clearedAt?.get(req.user._id.toString());
+    const query = { 
+      conversationId,
+      deletedFor: { $ne: req.user._id }
+    };
+
+    if (clearedAt) {
+      query.createdAt = { $gt: new Date(clearedAt) };
+    }
+
+    const totalMessages = await Message.countDocuments(query);
+    const messages = await Message.find(query)
       .populate("sender", "fullName avatar")
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -61,10 +71,29 @@ export const sendMessage = async (req, res, next) => {
     const conversation = await Conversation.findOne({
       _id: conversationId,
       participants: req.user._id,
-    });
+    }).populate("participants", "blockedUsers");
 
     if (!conversation) {
       return res.status(404).json({ message: "Conversation not found" });
+    }
+
+    // Check block status for direct messages
+    if (conversation.type === "direct") {
+      const recipient = conversation.participants.find(
+        (p) => p._id.toString() !== req.user._id.toString()
+      );
+      const sender = conversation.participants.find(
+        (p) => p._id.toString() === req.user._id.toString()
+      );
+
+      if (recipient && sender) {
+        if (recipient.blockedUsers.includes(sender._id)) {
+          return res.status(403).json({ message: "You cannot send messages to this user." });
+        }
+        if (sender.blockedUsers.includes(recipient._id)) {
+          return res.status(403).json({ message: "You blocked this user. Unblock to send a message." });
+        }
+      }
     }
 
     // Create the message
@@ -178,39 +207,49 @@ export const markAsRead = async (req, res, next) => {
 };
 
 /**
- * Delete a message (soft delete)
- * DELETE /api/messages/:id
+ * Delete a message (soft delete for everyone OR delete for me)
+ * DELETE /api/messages/:id?type=me|everyone
  */
 export const deleteMessage = async (req, res, next) => {
   try {
+    const { type = "everyone" } = req.query;
     const message = await Message.findById(req.params.id);
 
     if (!message) {
       return res.status(404).json({ message: "Message not found" });
     }
 
-    if (message.sender.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "You can only delete your own messages" });
+    if (type === "everyone") {
+      if (message.sender.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: "You can only delete your own messages for everyone" });
+      }
+      message.isDeleted = true;
+      message.content = "This message was deleted";
+      message.deletedAt = new Date();
+      message.reactions = []; // Clear reactions when deleted for everyone
+    } else if (type === "me") {
+      if (!message.deletedFor.includes(req.user._id)) {
+        message.deletedFor.push(req.user._id);
+      }
     }
 
-    message.isDeleted = true;
-    message.content = "This message was deleted";
-    message.deletedAt = new Date();
     await message.save();
 
-    // Notify other participants about deletion
-    const io = getIO();
-    const conversation = await Conversation.findById(message.conversationId);
-    conversation.participants.forEach((pId) => {
-      if (pId.toString() !== req.user._id.toString()) {
-        io.to(pId.toString()).emit("message:deleted", {
-          messageId: message._id,
-          conversationId: message.conversationId,
-        });
-      }
-    });
+    // Notify other participants about deletion only if type=everyone
+    if (type === "everyone") {
+      const io = getIO();
+      const conversation = await Conversation.findById(message.conversationId);
+      conversation.participants.forEach((pId) => {
+        if (pId.toString() !== req.user._id.toString()) {
+          io.to(pId.toString()).emit("message:deleted", {
+            messageId: message._id,
+            conversationId: message.conversationId,
+          });
+        }
+      });
+    }
 
-    res.json({ success: true, message });
+    res.json({ success: true, message, type });
   } catch (error) {
     next(error);
   }
@@ -262,5 +301,82 @@ export const uploadFile = async (req, res, next) => {
   } catch (error) {
     console.error("Upload error:", error.message);
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+/**
+ * React to a message
+ * POST /api/messages/:id/react
+ */
+export const reactToMessage = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { emoji } = req.body;
+    const userId = req.user._id;
+
+    if (!emoji) {
+      return res.status(400).json({ message: "Emoji is required" });
+    }
+
+    const message = await Message.findById(id);
+    if (!message) {
+      return res.status(404).json({ message: "Message not found" });
+    }
+
+    // Check if user already reacted
+    const existingReactionIndex = message.reactions.findIndex(
+      (r) => r.userId.toString() === userId.toString()
+    );
+
+    if (existingReactionIndex > -1) {
+      // If clicking the same emoji, remove it (toggle off)
+      if (message.reactions[existingReactionIndex].emoji === emoji) {
+        message.reactions.splice(existingReactionIndex, 1);
+      } else {
+        // Change emoji
+        message.reactions[existingReactionIndex].emoji = emoji;
+      }
+    } else {
+      // Add new reaction
+      message.reactions.push({ userId, emoji });
+    }
+
+    await message.save();
+
+    // Populate sender info if needed for real-time update
+    const io = getIO();
+    io.to(message.conversationId.toString()).emit("message:reaction", {
+      messageId: message._id,
+      conversationId: message.conversationId,
+      reactions: message.reactions,
+    });
+
+    res.json({ success: true, message });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Clear chat for current user
+ * POST /api/messages/:conversationId/clear
+ */
+export const clearChat = async (req, res, next) => {
+  try {
+    const { conversationId } = req.params;
+    const conversation = await Conversation.findById(conversationId);
+
+    if (!conversation) {
+      return res.status(404).json({ message: "Conversation not found" });
+    }
+
+    if (!conversation.clearedAt) conversation.clearedAt = new Map();
+    conversation.clearedAt.set(req.user._id.toString(), new Date());
+
+    await conversation.save();
+
+    res.json({ success: true, message: "Chat cleared" });
+  } catch (error) {
+    next(error);
   }
 };

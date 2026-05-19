@@ -101,7 +101,7 @@ const useChatStore = create((set, get) => ({
       return res.data.message;
     } catch (error) {
       console.error("Failed to send message:", error);
-      toast.error("Failed to send message");
+      toast.error(error.response?.data?.message || "Failed to send message");
       set({ isSendingMessage: false });
       return null;
     }
@@ -198,18 +198,24 @@ const useChatStore = create((set, get) => ({
   },
 
   /**
-   * Handle message deletion.
+   * Delete a message via API.
    */
-  deleteMessage: async (messageId) => {
+  deleteMessage: async (messageId, type = "everyone") => {
     try {
-      await api.delete(`/messages/${messageId}`);
-      set((state) => ({
-        messages: state.messages.map((msg) =>
-          msg._id === messageId
-            ? { ...msg, isDeleted: true, content: "This message was deleted" }
-            : msg
-        ),
-      }));
+      await api.delete(`/messages/${messageId}?type=${type}`);
+      if (type === "everyone") {
+        set((state) => ({
+          messages: state.messages.map((msg) =>
+            msg._id === messageId
+              ? { ...msg, isDeleted: true, content: "This message was deleted", reactions: [] }
+              : msg
+          ),
+        }));
+      } else if (type === "me") {
+        set((state) => ({
+          messages: state.messages.filter((msg) => msg._id !== messageId),
+        }));
+      }
     } catch {
       toast.error("Failed to delete message");
     }
@@ -298,14 +304,55 @@ const useChatStore = create((set, get) => ({
   },
 
   /**
-   * Add a new conversation from Socket.IO event.
+   * Add a new conversation to the list.
    */
   addConversation: (conversation) => {
     set((state) => {
-      const exists = state.conversations.find((c) => c._id === conversation._id);
-      if (exists) return {};
-      return { conversations: [conversation, ...state.conversations] };
+      // Check if it already exists
+      const exists = state.conversations.some((c) => c._id === conversation._id);
+      if (exists) {
+        // Update existing
+        return {
+          conversations: state.conversations.map((c) =>
+            c._id === conversation._id ? conversation : c
+          ),
+        };
+      }
+      // Add new
+      return {
+        conversations: [conversation, ...state.conversations],
+      };
     });
+  },
+
+  /**
+   * Clear all messages in the active conversation
+   */
+  clearChat: async (conversationId) => {
+    try {
+      await api.post(`/messages/${conversationId}/clear`);
+      set({ messages: [] });
+      toast.success("Chat cleared");
+    } catch (error) {
+      toast.error("Failed to clear chat");
+    }
+  },
+
+  /**
+   * Delete the active conversation
+   */
+  deleteConversation: async (conversationId) => {
+    try {
+      await api.delete(`/conversations/${conversationId}`);
+      set((state) => ({
+        conversations: state.conversations.filter(c => c._id !== conversationId),
+        activeConversation: state.activeConversation?._id === conversationId ? null : state.activeConversation,
+        messages: state.activeConversation?._id === conversationId ? [] : state.messages
+      }));
+      toast.success("Chat deleted");
+    } catch (error) {
+      toast.error("Failed to delete chat");
+    }
   },
 
   /**

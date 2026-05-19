@@ -11,6 +11,7 @@ import {
 } from "react-icons/io5";
 import EmojiPicker from "emoji-picker-react";
 import useChatStore from "../../store/useChatStore";
+import useAuthStore from "../../store/useAuthStore";
 import useTyping from "../../hooks/useTyping";
 import { fileToBase64 } from "../../lib/utils";
 import toast from "react-hot-toast";
@@ -48,7 +49,14 @@ const MessageInput = () => {
   }, [isRecording]);
 
   const { activeConversation, sendMessage, uploadFile } = useChatStore();
+  const { user, toggleBlockUser } = useAuthStore();
   const { startTyping, stopTyping } = useTyping(activeConversation?._id);
+
+  // Check if current user has blocked the recipient
+  const recipient = activeConversation?.type === "direct" 
+    ? activeConversation.participants.find(p => p._id !== user._id)
+    : null;
+  const isBlockedByMe = recipient && user?.blockedUsers?.includes(recipient._id);
 
   const handleSend = async () => {
     if (!text.trim() && !preview) return;
@@ -210,6 +218,20 @@ const MessageInput = () => {
       setIsUploading(false);
     }
   };
+
+  if (isBlockedByMe) {
+    return (
+      <div className="bg-light-2 dark:bg-dark-2 border-t border-gray-200 dark:border-dark-4 p-4 text-center">
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">You blocked this contact. Messages cannot be sent or received.</p>
+        <button 
+          onClick={() => toggleBlockUser(recipient._id)}
+          className="text-sm text-whatsapp-500 hover:text-whatsapp-600 font-medium"
+        >
+          Tap to unblock
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-light-2 dark:bg-dark-2 border-t border-gray-200 dark:border-dark-4">

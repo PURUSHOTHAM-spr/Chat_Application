@@ -119,6 +119,22 @@ const useAuthStore = create((set) => ({
   updateUser: (updatedUser) => {
     set({ user: updatedUser });
   },
+
+  /**
+   * Toggle block user.
+   */
+  toggleBlockUser: async (userId) => {
+    try {
+      const res = await api.post(`/users/${userId}/block`);
+      set((state) => ({
+        user: { ...state.user, blockedUsers: res.data.blockedUsers },
+      }));
+      return true;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to block user");
+      return false;
+    }
+  },
 }));
 
 export default useAuthStore;

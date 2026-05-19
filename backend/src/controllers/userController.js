@@ -128,3 +128,33 @@ export const getUserById = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Toggle block/unblock a user
+ * POST /api/users/:id/block
+ */
+export const toggleBlockUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const isBlocked = user.blockedUsers.includes(id);
+
+    if (isBlocked) {
+      user.blockedUsers = user.blockedUsers.filter(
+        (userId) => userId.toString() !== id
+      );
+    } else {
+      user.blockedUsers.push(id);
+    }
+
+    await user.save();
+    res.json({ success: true, blockedUsers: user.blockedUsers });
+  } catch (error) {
+    next(error);
+  }
+};
