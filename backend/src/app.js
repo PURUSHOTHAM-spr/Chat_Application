@@ -17,7 +17,11 @@ const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "https://chat-application-swart-six.vercel.app",
+    origin: [
+      process.env.CLIENT_URL,
+      "https://chat-application-swart-six.vercel.app",
+      "http://localhost:5173",
+    ].filter(Boolean),
     credentials: true,
   })
 );
