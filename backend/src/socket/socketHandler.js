@@ -12,12 +12,13 @@ import { getIO } from "../config/socket.js";
 const socketHandler = async (socket) => {
   console.log(`🔌 User connected: ${socket.user.fullName} (${socket.userId})`);
 
-  // Force logout any existing sessions on other devices/tabs
-  const io = getIO();
-  io.to(socket.userId).emit("session:expired");
-
-  // Join the user to their personal room (userId) for targeted messaging
+  // Join the user to their personal room FIRST
   socket.join(socket.userId);
+
+  // Force logout any existing sessions on other devices/tabs
+  // socket.to() sends to everyone in the room EXCEPT the sender,
+  // so this socket won't log itself out on page refresh.
+  socket.to(socket.userId).emit("session:expired");
 
   // Also join all conversation rooms the user belongs to
   try {

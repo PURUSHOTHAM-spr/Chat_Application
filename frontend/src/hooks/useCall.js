@@ -5,14 +5,14 @@ import { ICE_SERVERS, MAX_VIDEO_KBPS } from "../constants";
 /**
  * WebRTC Call Controller — singleton that manages the entire call lifecycle.
  *
- * Fixes applied:
- * 1. Stores the SDP offer during the ringing phase so acceptCall can use it
- *    directly instead of waiting for a re-emitted offer that never comes.
- * 2. Tracks remotePeerId so endCall/hangup always notifies the correct peer.
- * 3. Consolidates ICE candidate handling inside attachSocketHandlers to prevent
- *    duplicate listeners from startCall/acceptCall.
- * 4. Adds call duration timer, call type tracking, and caller info for the UI.
- * 5. Handles reconnect scenarios and prevents memory leaks.
+ * Fixes applied (v2):
+ * 1. ICE candidate buffering — queues candidates until remoteDescription is set,
+ *    then flushes them. This fixes the "remote description was null" error.
+ * 2. Stores the SDP offer during ringing so acceptCall can use it directly.
+ * 3. Tracks remotePeerId so endCall always notifies the correct peer.
+ * 4. Consolidated ICE handling in attachSocketHandlers — no duplicate listeners.
+ * 5. Call duration timer, call type tracking, caller info for UI.
+ * 6. Handles reconnect scenarios and prevents memory leaks.
  */
 
 const DEFAULT_ICE = { iceServers: ICE_SERVERS };
@@ -25,6 +25,10 @@ const createController = () => {
   const pcRef = { current: null };
   const localStreamRef = { current: null };
   const remoteStreamRef = { current: null };
+
+  // ── ICE candidate buffer ──
+  // Candidates that arrive before remoteDescription is set are queued here
+  let pendingCandidates = [];
 
   // ── Call state ──
   let status = "idle"; // idle | ringing | connecting | connected | ended
@@ -59,6 +63,7 @@ const createController = () => {
 
   // ── Duration timer ──
   const startDurationTimer = () => {
+    if (durationInterval) return; // already running
     callStartTime = Date.now();
     callDuration = 0;
     durationInterval = setInterval(() => {
@@ -74,6 +79,20 @@ const createController = () => {
     }
     callStartTime = null;
     callDuration = 0;
+  };
+
+  // ── Flush buffered ICE candidates ──
+  const flushPendingCandidates = async () => {
+    if (!pcRef.current || !pcRef.current.remoteDescription) return;
+    const toFlush = [...pendingCandidates];
+    pendingCandidates = [];
+    for (const candidate of toFlush) {
+      try {
+        await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (e) {
+        console.warn("Failed to flush buffered ICE candidate:", e);
+      }
+    }
   };
 
   // ── Cleanup ──
@@ -95,6 +114,7 @@ const createController = () => {
     callerInfo = null;
     isMuted = false;
     cameraOff = false;
+    pendingCandidates = [];
     emitChange();
 
     // Reset to idle after a brief delay so UI can show "ended" state
@@ -177,13 +197,10 @@ const createController = () => {
           startDurationTimer();
           emitChange();
         }
-      } else if (state === "failed" || state === "disconnected") {
-        // Try to restart ICE on failure
-        if (state === "failed") {
-          try {
-            pc.restartIce();
-          } catch (_) {}
-        }
+      } else if (state === "failed") {
+        try {
+          pc.restartIce();
+        } catch (_) {}
       } else if (state === "closed") {
         if (status === "connected" || status === "connecting") {
           cleanupPeer();
@@ -217,6 +234,7 @@ const createController = () => {
         socket.emit("call:hangup", { to: from, reason: "busy" });
         return;
       }
+      // Store the full SDP offer for use in acceptCall
       callMeta = { from, offer, meta };
       callType = meta?.type || "audio";
       remotePeerId = from;
@@ -224,13 +242,15 @@ const createController = () => {
       emitChange();
     });
 
-    // ── Answer from callee ──
+    // ── Answer from callee (CALLER receives this) ──
     socket.on("call:answer", async ({ from, answer }) => {
       if (!pcRef.current) return;
       try {
         await pcRef.current.setRemoteDescription(
           new RTCSessionDescription(answer)
         );
+        // NOW flush any ICE candidates that arrived before the answer
+        await flushPendingCandidates();
         status = "connected";
         startDurationTimer();
         emitChange();
@@ -239,9 +259,18 @@ const createController = () => {
       }
     });
 
-    // ── ICE candidates (bidirectional) ──
+    // ── ICE candidates (bidirectional, with buffering) ──
     socket.on("call:ice-candidate", async ({ from, candidate }) => {
-      if (!pcRef.current) return;
+      if (!candidate) return;
+
+      // If we don't have a peer connection yet, or remoteDescription isn't set,
+      // buffer the candidate for later
+      if (!pcRef.current || !pcRef.current.remoteDescription) {
+        pendingCandidates.push(candidate);
+        return;
+      }
+
+      // Remote description is set — add immediately
       try {
         await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
       } catch (e) {
@@ -272,7 +301,7 @@ const createController = () => {
     socketAttached = true;
   };
 
-  // ── Start outgoing call ──
+  // ── Start outgoing call (CALLER) ──
   const startCall = async ({ toUserId, type = "video", userInfo = null }) => {
     if (status !== "idle" && status !== "ended") {
       throw new Error("Already in a call");
@@ -288,6 +317,7 @@ const createController = () => {
     status = "connecting";
     isMuted = false;
     cameraOff = false;
+    pendingCandidates = [];
     emitChange();
 
     const pc = createPeerConnection();
@@ -314,14 +344,13 @@ const createController = () => {
     return { localStream: localStreamRef.current, remoteStream: remoteStreamRef.current };
   };
 
-  // ── Accept incoming call ──
+  // ── Accept incoming call (CALLEE) ──
   const acceptCall = async ({ fromUserId, type = "video" }) => {
     attachSocketHandlers();
     const socket = getSock();
     if (!socket) throw new Error("Socket not connected");
 
-    // CRITICAL FIX: Use the stored offer from callMeta instead of waiting
-    // for a new call:offer event that will never come.
+    // Use the stored offer from callMeta
     const storedOffer = callMeta?.offer;
     if (!storedOffer) {
       throw new Error("No offer available to accept");
@@ -332,6 +361,7 @@ const createController = () => {
     status = "connecting";
     isMuted = false;
     cameraOff = false;
+    pendingCandidates = [];
     emitChange();
 
     const pc = createPeerConnection();
@@ -340,6 +370,9 @@ const createController = () => {
 
     // Set the remote offer that was stored during the ringing phase
     await pc.setRemoteDescription(new RTCSessionDescription(storedOffer));
+
+    // Flush any ICE candidates from the caller that arrived during ringing
+    await flushPendingCandidates();
 
     if (type === "video") await applyBitrateCap();
 
