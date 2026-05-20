@@ -4,13 +4,22 @@ import { SOCKET_URL } from "../constants";
 let socket = null;
 
 /**
+ * Grace period flag — prevents session:expired from firing during
+ * initial connection or page refresh. The backend fix (socket.to vs io.to)
+ * handles the server side, but this is a defensive frontend guard.
+ */
+let connectionGracePeriod = false;
+
+/**
  * Initialize Socket.IO connection with JWT authentication.
  * Returns the existing connection if already connected.
  */
 export const connectSocket = (token) => {
   if (socket?.connected) return socket;
 
-  // Allow polling fallback and detailed connect errors for debugging
+  // Set grace period before connecting
+  connectionGracePeriod = true;
+
   socket = io(SOCKET_URL, {
     path: "/socket.io",
     auth: { token },
@@ -24,10 +33,14 @@ export const connectSocket = (token) => {
 
   socket.on("connect", () => {
     console.log("🔌 Socket connected:", socket.id);
+    // Allow session:expired events after a brief grace period
+    // This prevents logout on page refresh
+    setTimeout(() => {
+      connectionGracePeriod = false;
+    }, 3000);
   });
 
   socket.on("connect_error", (error) => {
-    // Log full error for diagnostics; show short message in UI if needed.
     console.error("Socket connection error:", error);
     if (error && error.message) {
       console.warn("Socket connect_error message:", error.message);
@@ -55,3 +68,10 @@ export const disconnectSocket = () => {
  * Get the current socket instance.
  */
 export const getSocket = () => socket;
+
+/**
+ * Check if we're in the connection grace period.
+ * During this period, session:expired events should be ignored
+ * to prevent logout on page refresh.
+ */
+export const isInGracePeriod = () => connectionGracePeriod;

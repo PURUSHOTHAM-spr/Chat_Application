@@ -1,69 +1,64 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { getSocket } from "../lib/socket";
 import { ICE_SERVERS, MAX_VIDEO_KBPS } from "../constants";
 
 /**
- * WebRTC Call Controller — singleton that manages the entire call lifecycle.
+ * WebRTC Call Controller v3 — Production-grade implementation.
  *
- * Fixes applied (v2):
- * 1. ICE candidate buffering — queues candidates until remoteDescription is set,
- *    then flushes them. This fixes the "remote description was null" error.
- * 2. Stores the SDP offer during ringing so acceptCall can use it directly.
- * 3. Tracks remotePeerId so endCall always notifies the correct peer.
- * 4. Consolidated ICE handling in attachSocketHandlers — no duplicate listeners.
- * 5. Call duration timer, call type tracking, caller info for UI.
- * 6. Handles reconnect scenarios and prevents memory leaks.
+ * Key techniques:
+ * 1. Uses event.streams[0] in ontrack with addTrack fallback
+ * 2. ICE candidate buffering until remoteDescription is set
+ * 3. Stores SDP offer during ringing for immediate use in acceptCall
+ * 4. Stream version counter forces React re-renders on new tracks
+ * 5. Proper cleanup prevents memory leaks and duplicate listeners
+ * 6. TURN server support for cross-network connectivity
  */
 
-const DEFAULT_ICE = { iceServers: ICE_SERVERS };
+const DEFAULT_ICE = {
+  iceServers: ICE_SERVERS,
+  iceCandidatePoolSize: 10, // Pre-allocate candidates for faster connection
+};
 
 const createController = () => {
   const getSock = () => getSocket();
   let socketAttached = false;
 
-  // ── Peer connection & streams ──
+  // ── Core refs ──
   const pcRef = { current: null };
   const localStreamRef = { current: null };
   const remoteStreamRef = { current: null };
 
   // ── ICE candidate buffer ──
-  // Candidates that arrive before remoteDescription is set are queued here
   let pendingCandidates = [];
 
   // ── Call state ──
-  let status = "idle"; // idle | ringing | connecting | connected | ended
+  let status = "idle";
   let isMuted = false;
   let cameraOff = false;
-  let callMeta = null; // { from, offer, meta: { type } }
+  let callMeta = null;
   let remotePeerId = null;
-  let callType = "audio"; // "audio" | "video"
+  let callType = "audio";
   let callStartTime = null;
   let callDuration = 0;
   let durationInterval = null;
-  let callerInfo = null; // { _id, fullName, avatar }
+  let callerInfo = null;
+  let streamVersion = 0; // Increments on every stream change to force UI updates
 
   const listeners = new Set();
 
-  // ── Notify all React subscribers ──
   const emitChange = () => {
     const snapshot = {
-      status,
-      isMuted,
-      cameraOff,
-      callMeta,
-      localStreamRef,
-      remoteStreamRef,
-      remotePeerId,
-      callType,
-      callDuration,
-      callerInfo,
+      status, isMuted, cameraOff, callMeta,
+      localStreamRef, remoteStreamRef,
+      remotePeerId, callType, callDuration, callerInfo,
+      streamVersion,
     };
     for (const fn of listeners) fn(snapshot);
   };
 
   // ── Duration timer ──
   const startDurationTimer = () => {
-    if (durationInterval) return; // already running
+    if (durationInterval) return;
     callStartTime = Date.now();
     callDuration = 0;
     durationInterval = setInterval(() => {
@@ -73,25 +68,19 @@ const createController = () => {
   };
 
   const stopDurationTimer = () => {
-    if (durationInterval) {
-      clearInterval(durationInterval);
-      durationInterval = null;
-    }
+    if (durationInterval) { clearInterval(durationInterval); durationInterval = null; }
     callStartTime = null;
     callDuration = 0;
   };
 
   // ── Flush buffered ICE candidates ──
   const flushPendingCandidates = async () => {
-    if (!pcRef.current || !pcRef.current.remoteDescription) return;
+    if (!pcRef.current?.remoteDescription) return;
     const toFlush = [...pendingCandidates];
     pendingCandidates = [];
-    for (const candidate of toFlush) {
-      try {
-        await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-      } catch (e) {
-        console.warn("Failed to flush buffered ICE candidate:", e);
-      }
+    for (const c of toFlush) {
+      try { await pcRef.current.addIceCandidate(new RTCIceCandidate(c)); }
+      catch (e) { console.warn("Flush ICE failed:", e); }
     }
   };
 
@@ -99,11 +88,8 @@ const createController = () => {
   const cleanupPeer = () => {
     stopDurationTimer();
     status = "ended";
-    try {
-      pcRef.current?.close();
-    } catch (_) {}
+    try { pcRef.current?.close(); } catch (_) {}
     pcRef.current = null;
-
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((t) => t.stop());
       localStreamRef.current = null;
@@ -116,33 +102,25 @@ const createController = () => {
     cameraOff = false;
     pendingCandidates = [];
     emitChange();
-
-    // Reset to idle after a brief delay so UI can show "ended" state
-    setTimeout(() => {
-      if (status === "ended") {
-        status = "idle";
-        emitChange();
-      }
-    }, 2000);
+    setTimeout(() => { if (status === "ended") { status = "idle"; emitChange(); } }, 2000);
   };
 
-  // ── Media ──
+  // ── Get user media ──
   const prepareLocalMedia = async (wantVideo) => {
-    const constraints = { audio: true, video: wantVideo };
     try {
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+        video: wantVideo ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" } : false,
+      });
       localStreamRef.current = stream;
-      if (isMuted) stream.getAudioTracks().forEach((t) => (t.enabled = false));
-      if (cameraOff) stream.getVideoTracks().forEach((t) => (t.enabled = false));
+      streamVersion++;
       emitChange();
       return stream;
     } catch (err) {
-      console.error("Failed to get user media:", err);
-      throw new Error(
-        err.name === "NotAllowedError"
-          ? "Camera/microphone permission denied"
-          : "Could not access camera/microphone"
-      );
+      console.error("getUserMedia failed:", err);
+      throw new Error(err.name === "NotAllowedError"
+        ? "Camera/microphone permission denied. Please allow access."
+        : "Could not access camera/microphone");
     }
   };
 
@@ -150,62 +128,66 @@ const createController = () => {
   const applyBitrateCap = async () => {
     if (!MAX_VIDEO_KBPS || !pcRef.current) return;
     try {
-      const senders = pcRef.current.getSenders();
-      const videoSender = senders.find((s) => s.track?.kind === "video");
-      if (videoSender?.getParameters) {
-        const params = videoSender.getParameters();
-        params.encodings =
-          params.encodings?.length ? params.encodings : [{}];
+      const sender = pcRef.current.getSenders().find((s) => s.track?.kind === "video");
+      if (sender?.getParameters) {
+        const params = sender.getParameters();
+        params.encodings = params.encodings?.length ? params.encodings : [{}];
         params.encodings[0].maxBitrate = MAX_VIDEO_KBPS * 1000;
-        await videoSender.setParameters(params);
+        await sender.setParameters(params);
       }
-    } catch (e) {
-      console.warn("Failed to set max video bitrate", e);
-    }
+    } catch (e) { console.warn("Bitrate cap failed:", e); }
   };
 
-  // ── Create peer connection ──
+  // ── Create RTCPeerConnection ──
   const createPeerConnection = () => {
     const pc = new RTCPeerConnection(DEFAULT_ICE);
-    const remoteStream = new MediaStream();
-    remoteStreamRef.current = remoteStream;
 
-    pc.ontrack = (evt) => {
-      evt.streams[0]?.getTracks().forEach((t) => {
-        if (!remoteStream.getTracks().find((rt) => rt.id === t.id)) {
-          remoteStream.addTrack(t);
+    // ─── ontrack: THE critical handler for receiving remote media ───
+    // Strategy: Use event.streams[0] if available (most reliable, preserves
+    // the original stream ID from the sender). Fallback to manually adding
+    // the track to our own MediaStream.
+    pc.ontrack = (event) => {
+      console.log("📹 ontrack fired:", event.track.kind, "streams:", event.streams.length);
+
+      let stream;
+      if (event.streams && event.streams.length > 0) {
+        // Best case: browser provides the remote stream directly
+        stream = event.streams[0];
+      } else {
+        // Fallback: create/reuse our own stream and add the track
+        stream = remoteStreamRef.current || new MediaStream();
+        if (!stream.getTracks().find((t) => t.id === event.track.id)) {
+          stream.addTrack(event.track);
         }
-      });
+      }
+
+      remoteStreamRef.current = stream;
+      streamVersion++;
       emitChange();
     };
 
     pc.onicecandidate = (evt) => {
       if (evt.candidate && remotePeerId) {
-        const socket = getSock();
-        socket?.emit("call:ice-candidate", {
-          to: remotePeerId,
-          candidate: evt.candidate,
-        });
+        getSock()?.emit("call:ice-candidate", { to: remotePeerId, candidate: evt.candidate });
       }
     };
 
     pc.oniceconnectionstatechange = () => {
-      const state = pc.iceConnectionState;
-      if (state === "connected" || state === "completed") {
-        if (status !== "connected") {
-          status = "connected";
-          startDurationTimer();
-          emitChange();
-        }
-      } else if (state === "failed") {
-        try {
-          pc.restartIce();
-        } catch (_) {}
-      } else if (state === "closed") {
-        if (status === "connected" || status === "connecting") {
-          cleanupPeer();
-        }
+      const s = pc.iceConnectionState;
+      console.log("🧊 ICE state:", s);
+      if ((s === "connected" || s === "completed") && status !== "connected") {
+        status = "connected";
+        startDurationTimer();
+        emitChange();
+      } else if (s === "failed") {
+        try { pc.restartIce(); } catch (_) {}
+      } else if (s === "closed" && (status === "connected" || status === "connecting")) {
+        cleanupPeer();
       }
+    };
+
+    pc.onconnectionstatechange = () => {
+      console.log("🔗 Connection state:", pc.connectionState);
     };
 
     pcRef.current = pc;
@@ -218,23 +200,14 @@ const createController = () => {
     const socket = getSock();
     if (!socket) return;
 
-    // Remove any stale listeners first
-    socket.off("call:offer");
-    socket.off("call:answer");
-    socket.off("call:ice-candidate");
-    socket.off("call:ring");
-    socket.off("call:hangup");
-    socket.off("call:missed");
-    socket.off("call:reject");
+    ["call:offer", "call:answer", "call:ice-candidate", "call:ring",
+     "call:hangup", "call:missed", "call:reject"].forEach((e) => socket.off(e));
 
-    // ── Incoming offer (sets ringing state and stores the SDP offer) ──
     socket.on("call:offer", ({ from, offer, meta }) => {
-      // If already in a call, reject the new one
       if (status === "connected" || status === "connecting") {
         socket.emit("call:hangup", { to: from, reason: "busy" });
         return;
       }
-      // Store the full SDP offer for use in acceptCall
       callMeta = { from, offer, meta };
       callType = meta?.type || "audio";
       remotePeerId = from;
@@ -242,70 +215,36 @@ const createController = () => {
       emitChange();
     });
 
-    // ── Answer from callee (CALLER receives this) ──
     socket.on("call:answer", async ({ from, answer }) => {
       if (!pcRef.current) return;
       try {
-        await pcRef.current.setRemoteDescription(
-          new RTCSessionDescription(answer)
-        );
-        // NOW flush any ICE candidates that arrived before the answer
+        await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
         await flushPendingCandidates();
-        status = "connected";
-        startDurationTimer();
-        emitChange();
-      } catch (e) {
-        console.error("Failed to set remote description (answer):", e);
-      }
+        if (status !== "connected") { status = "connected"; startDurationTimer(); emitChange(); }
+      } catch (e) { console.error("setRemoteDescription(answer) failed:", e); }
     });
 
-    // ── ICE candidates (bidirectional, with buffering) ──
     socket.on("call:ice-candidate", async ({ from, candidate }) => {
       if (!candidate) return;
-
-      // If we don't have a peer connection yet, or remoteDescription isn't set,
-      // buffer the candidate for later
-      if (!pcRef.current || !pcRef.current.remoteDescription) {
+      if (!pcRef.current?.remoteDescription) {
         pendingCandidates.push(candidate);
         return;
       }
-
-      // Remote description is set — add immediately
-      try {
-        await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-      } catch (e) {
-        console.warn("Failed to add ICE candidate:", e);
-      }
+      try { await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate)); }
+      catch (e) { console.warn("addIceCandidate failed:", e); }
     });
 
-    // ── Ringing notification ──
-    socket.on("call:ring", ({ from, callId, meta }) => {
-      // Already handled by call:offer — ring is just a notification
-    });
-
-    // ── Hangup ──
-    socket.on("call:hangup", ({ from, reason }) => {
-      cleanupPeer();
-    });
-
-    // ── Reject ──
-    socket.on("call:reject", ({ from, reason }) => {
-      cleanupPeer();
-    });
-
-    // ── Missed call ──
-    socket.on("call:missed", ({ from, meta }) => {
-      console.log("Missed call from", from, meta);
-    });
+    socket.on("call:ring", () => {});
+    socket.on("call:hangup", () => cleanupPeer());
+    socket.on("call:reject", () => cleanupPeer());
+    socket.on("call:missed", ({ from, meta }) => console.log("Missed call:", from));
 
     socketAttached = true;
   };
 
-  // ── Start outgoing call (CALLER) ──
+  // ── Start call (CALLER) ──
   const startCall = async ({ toUserId, type = "video", userInfo = null }) => {
-    if (status !== "idle" && status !== "ended") {
-      throw new Error("Already in a call");
-    }
+    if (status !== "idle" && status !== "ended") throw new Error("Already in a call");
 
     attachSocketHandlers();
     const socket = getSock();
@@ -326,35 +265,26 @@ const createController = () => {
 
     if (type === "video") await applyBitrateCap();
 
-    const offer = await pc.createOffer();
+    const offer = await pc.createOffer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: type === "video",
+    });
     await pc.setLocalDescription(offer);
 
-    // Send ring and offer to callee
-    socket.emit("call:ring", {
-      to: toUserId,
-      callId: "call_" + Date.now(),
-      meta: { type },
-    });
-    socket.emit("call:offer", {
-      to: toUserId,
-      offer: pc.localDescription,
-      meta: { type },
-    });
+    socket.emit("call:ring", { to: toUserId, callId: "call_" + Date.now(), meta: { type } });
+    socket.emit("call:offer", { to: toUserId, offer: pc.localDescription, meta: { type } });
 
     return { localStream: localStreamRef.current, remoteStream: remoteStreamRef.current };
   };
 
-  // ── Accept incoming call (CALLEE) ──
+  // ── Accept call (CALLEE) ──
   const acceptCall = async ({ fromUserId, type = "video" }) => {
     attachSocketHandlers();
     const socket = getSock();
     if (!socket) throw new Error("Socket not connected");
 
-    // Use the stored offer from callMeta
     const storedOffer = callMeta?.offer;
-    if (!storedOffer) {
-      throw new Error("No offer available to accept");
-    }
+    if (!storedOffer) throw new Error("No offer available");
 
     callType = type;
     remotePeerId = fromUserId;
@@ -368,21 +298,15 @@ const createController = () => {
     const localStream = await prepareLocalMedia(type === "video");
     localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));
 
-    // Set the remote offer that was stored during the ringing phase
+    // Set remote description FIRST so ontrack can fire for the caller's tracks
     await pc.setRemoteDescription(new RTCSessionDescription(storedOffer));
-
-    // Flush any ICE candidates from the caller that arrived during ringing
     await flushPendingCandidates();
 
     if (type === "video") await applyBitrateCap();
 
-    // Create and send answer
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
-    socket.emit("call:answer", {
-      to: fromUserId,
-      answer: pc.localDescription,
-    });
+    socket.emit("call:answer", { to: fromUserId, answer: pc.localDescription });
 
     status = "connected";
     startDurationTimer();
@@ -391,7 +315,6 @@ const createController = () => {
     return { localStream: localStreamRef.current, remoteStream: remoteStreamRef.current };
   };
 
-  // ── Reject incoming call ──
   const rejectCall = ({ toUserId } = {}) => {
     const target = toUserId || remotePeerId || callMeta?.from;
     const s = getSock();
@@ -402,17 +325,13 @@ const createController = () => {
     cleanupPeer();
   };
 
-  // ── End active call ──
   const endCall = () => {
     const target = remotePeerId || callMeta?.from;
     const s = getSock();
-    if (target && s) {
-      s.emit("call:hangup", { to: target, reason: "ended" });
-    }
+    if (target && s) s.emit("call:hangup", { to: target, reason: "ended" });
     cleanupPeer();
   };
 
-  // ── Toggle mute ──
   const toggleMute = () => {
     const stream = localStreamRef.current;
     if (!stream) return;
@@ -421,7 +340,6 @@ const createController = () => {
     emitChange();
   };
 
-  // ── Toggle camera ──
   const toggleCamera = () => {
     const stream = localStreamRef.current;
     if (!stream) return;
@@ -432,75 +350,39 @@ const createController = () => {
 
   return {
     getState: () => ({
-      status,
-      isMuted,
-      cameraOff,
-      callMeta,
-      localStreamRef,
-      remoteStreamRef,
-      remotePeerId,
-      callType,
-      callDuration,
-      callerInfo,
+      status, isMuted, cameraOff, callMeta,
+      localStreamRef, remoteStreamRef,
+      remotePeerId, callType, callDuration, callerInfo, streamVersion,
     }),
-    startCall,
-    acceptCall,
-    rejectCall,
-    endCall,
-    toggleMute,
-    toggleCamera,
+    startCall, acceptCall, rejectCall, endCall, toggleMute, toggleCamera,
     subscribe: (fn) => {
       listeners.add(fn);
       fn({
-        status,
-        isMuted,
-        cameraOff,
-        callMeta,
-        localStreamRef,
-        remoteStreamRef,
-        remotePeerId,
-        callType,
-        callDuration,
-        callerInfo,
+        status, isMuted, cameraOff, callMeta,
+        localStreamRef, remoteStreamRef,
+        remotePeerId, callType, callDuration, callerInfo, streamVersion,
       });
       return () => listeners.delete(fn);
     },
   };
 };
 
-// Singleton instance
 const controller = createController();
 
-/**
- * React hook that exposes the call controller state and actions.
- * All components using this hook share the same underlying controller.
- */
 export default function useCall() {
   const [state, setState] = useState(controller.getState());
-
   useEffect(() => {
     const unsub = controller.subscribe((s) => setState({ ...s }));
     return () => unsub();
   }, []);
 
   return {
-    // Actions
     startCall: controller.startCall,
     acceptCall: controller.acceptCall,
     rejectCall: controller.rejectCall,
     endCall: controller.endCall,
     toggleMute: controller.toggleMute,
     toggleCamera: controller.toggleCamera,
-    // State
-    status: state.status,
-    isMuted: state.isMuted,
-    cameraOff: state.cameraOff,
-    localStreamRef: state.localStreamRef,
-    remoteStreamRef: state.remoteStreamRef,
-    callMeta: state.callMeta,
-    remotePeerId: state.remotePeerId,
-    callType: state.callType,
-    callDuration: state.callDuration,
-    callerInfo: state.callerInfo,
+    ...state,
   };
 }

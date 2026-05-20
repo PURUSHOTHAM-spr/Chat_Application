@@ -67,7 +67,9 @@ export const WALLPAPERS = [
   "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80",
 ];
 
-// ICE servers: set via VITE_ICE_SERVERS as JSON string, otherwise use Google STUN defaults
+// ICE servers: STUN + TURN for reliable connectivity across all network types.
+// Without TURN, calls fail behind symmetric NATs and firewalls.
+// Override via VITE_ICE_SERVERS env var (JSON string).
 export const ICE_SERVERS = (() => {
   try {
     const raw = import.meta.env.VITE_ICE_SERVERS;
@@ -78,6 +80,25 @@ export const ICE_SERVERS = (() => {
   return [
     { urls: "stun:stun.l.google.com:19302" },
     { urls: "stun:stun1.l.google.com:19302" },
+    { urls: "stun:stun2.l.google.com:19302" },
+    { urls: "stun:stun3.l.google.com:19302" },
+    { urls: "stun:stun4.l.google.com:19302" },
+    // Free TURN servers for cross-network connectivity
+    {
+      urls: "turn:openrelay.metered.ca:80",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turn:openrelay.metered.ca:443",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turn:openrelay.metered.ca:443?transport=tcp",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
   ];
 })();
 

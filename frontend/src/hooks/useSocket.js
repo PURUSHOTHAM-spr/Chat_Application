@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { getSocket } from "../lib/socket";
+import { getSocket, isInGracePeriod } from "../lib/socket";
 import { SOCKET_EVENTS } from "../constants";
 import useChatStore from "../store/useChatStore";
 import useNotificationStore from "../store/useNotificationStore";
@@ -84,7 +84,13 @@ const useSocket = () => {
     };
 
     // --- Session events ---
+    // Ignore session:expired during the initial connection grace period
+    // to prevent logout on page refresh.
     const handleSessionExpired = () => {
+      if (isInGracePeriod()) {
+        console.log("Ignoring session:expired during connection grace period");
+        return;
+      }
       forceLogout();
     };
 
