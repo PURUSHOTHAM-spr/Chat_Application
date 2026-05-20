@@ -10,10 +10,13 @@ let socket = null;
 export const connectSocket = (token) => {
   if (socket?.connected) return socket;
 
+  // Allow polling fallback and detailed connect errors for debugging
   socket = io(SOCKET_URL, {
+    path: "/socket.io",
     auth: { token },
+    transports: ["websocket", "polling"],
     reconnection: true,
-    reconnectionAttempts: 10,
+    reconnectionAttempts: 20,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
     timeout: 20000,
@@ -24,7 +27,11 @@ export const connectSocket = (token) => {
   });
 
   socket.on("connect_error", (error) => {
-    console.error("Socket connection error:", error.message);
+    // Log full error for diagnostics; show short message in UI if needed.
+    console.error("Socket connection error:", error);
+    if (error && error.message) {
+      console.warn("Socket connect_error message:", error.message);
+    }
   });
 
   socket.on("disconnect", (reason) => {

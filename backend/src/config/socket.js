@@ -25,13 +25,25 @@ export const initializeSocket = (httpServer) => {
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token;
+      // Log handshake attempt for debugging (don't log full token in production)
+      console.log("Socket handshake from", socket.handshake.address, "tokenPresent:", !!token);
+
       if (!token) {
+        console.warn("Socket auth failed: missing token");
         return next(new Error("Authentication token required"));
       }
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      let decoded;
+      try {
+        decoded = jwt.verify(token, process.env.JWT_SECRET);
+      } catch (err) {
+        console.warn("Socket auth failed: jwt verify error", err.message);
+        return next(new Error("Invalid authentication token"));
+      }
+
       const user = await User.findById(decoded.userId).select("-password");
       if (!user) {
+        console.warn("Socket auth failed: user not found", decoded.userId);
         return next(new Error("User not found"));
       }
 
@@ -39,6 +51,7 @@ export const initializeSocket = (httpServer) => {
       socket.user = user;
       next();
     } catch (error) {
+      console.error("Socket auth middleware unexpected error:", error);
       next(new Error("Invalid authentication token"));
     }
   });
