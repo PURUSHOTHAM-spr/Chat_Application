@@ -1,0 +1,61 @@
+import { getIO } from "../config/socket.js";
+
+/**
+ * callEvents(socket)
+ * Handles WebRTC signaling events between two peers using Socket.IO.
+ * Events handled:
+ * - call:offer -> forward SDP offer to callee
+ * - call:answer -> forward SDP answer to caller
+ * - call:ice-candidate -> forward ICE candidates
+ * - call:ring -> notify callee of incoming call
+ * - call:hangup -> notify remote peer to end call
+ * - call:missed -> record missed call notification
+ *
+ * Each event forwards the payload to the target user's personal room (userId).
+ */
+const callEvents = (socket) => {
+  const io = getIO();
+
+  // Send an offer to the callee
+  socket.on("call:offer", ({ to, offer, meta }) => {
+    if (!to) return;
+    io.to(to).emit("call:offer", { from: socket.userId, offer, meta });
+  });
+
+  // Send an answer back to the caller
+  socket.on("call:answer", ({ to, answer }) => {
+    if (!to) return;
+    io.to(to).emit("call:answer", { from: socket.userId, answer });
+  });
+
+  // Exchange ICE candidates
+  socket.on("call:ice-candidate", ({ to, candidate }) => {
+    if (!to) return;
+    io.to(to).emit("call:ice-candidate", { from: socket.userId, candidate });
+  });
+
+  // Notify callee of incoming call (ringing)
+  socket.on("call:ring", ({ to, callId, meta }) => {
+    if (!to) return;
+    io.to(to).emit("call:ring", { from: socket.userId, callId, meta });
+  });
+
+  // Hangup
+  socket.on("call:hangup", ({ to, reason }) => {
+    if (!to) return;
+    io.to(to).emit("call:hangup", { from: socket.userId, reason });
+  });
+
+  // Notify missed call (for notifications)
+  socket.on("call:missed", ({ to, meta }) => {
+    if (!to) return;
+    io.to(to).emit("call:missed", { from: socket.userId, meta });
+  });
+
+  // Clean up on disconnect
+  socket.on("disconnect", () => {
+    // no-op for now; presenceEvents handles status
+  });
+};
+
+export default callEvents;

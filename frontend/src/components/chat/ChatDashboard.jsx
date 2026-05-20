@@ -6,6 +6,8 @@ import useChatStore from "../../store/useChatStore";
 import useSocket from "../../hooks/useSocket";
 import ProfileSettings from "../profile/ProfileSettings";
 import NotificationsPanel from "../notifications/NotificationsPanel";
+import IncomingCallModal from "../call/IncomingCallModal";
+import CallWindow from "../call/CallWindow";
 
 /**
  * Main chat dashboard layout — WhatsApp-style with sidebar + chat window.
@@ -75,6 +77,9 @@ const ChatDashboard = () => {
 
       {/* Notifications Panel */}
       <NotificationsPanel />
+      {/* Incoming call and active call UI */}
+      <IncomingCallModal />
+      <CallWindow />
     </div>
   );
 };

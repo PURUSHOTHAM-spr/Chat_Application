@@ -1,6 +1,7 @@
 import chatEvents from "./chatEvents.js";
 import typingEvents from "./typingEvents.js";
 import presenceEvents from "./presenceEvents.js";
+import callEvents from "./callEvents.js";
 import Conversation from "../models/Conversation.js";
 import { getIO } from "../config/socket.js";
 
@@ -34,6 +35,7 @@ const socketHandler = async (socket) => {
   chatEvents(socket);
   typingEvents(socket);
   presenceEvents(socket);
+  callEvents(socket);
 
   // Handle errors
   socket.on("error", (error) => {

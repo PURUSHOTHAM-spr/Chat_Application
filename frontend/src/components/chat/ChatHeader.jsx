@@ -5,6 +5,7 @@ import useChatStore from "../../store/useChatStore";
 import useAuthStore from "../../store/useAuthStore";
 import ProfileModal from "../profile/ProfileModal";
 import GroupInfo from "../group/GroupInfo";
+import CallButton from "../call/CallButton";
 import {
   getConversationName,
   getOtherParticipant,
@@ -114,6 +115,7 @@ const ChatHeader = ({ onBack }) => {
 
         {/* Actions */}
         <div className="flex items-center gap-1">
+          <CallButton />
           <button className="p-2.5 rounded-full hover:bg-gray-200 dark:hover:bg-dark-4 transition-colors">
             <IoSearch className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           </button>

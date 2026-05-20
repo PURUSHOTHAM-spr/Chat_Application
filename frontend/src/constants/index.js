@@ -66,3 +66,20 @@ export const WALLPAPERS = [
   "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80",
   "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80",
 ];
+
+// ICE servers: set via VITE_ICE_SERVERS as JSON string, otherwise use Google STUN defaults
+export const ICE_SERVERS = (() => {
+  try {
+    const raw = import.meta.env.VITE_ICE_SERVERS;
+    if (raw) return JSON.parse(raw);
+  } catch (e) {
+    // fallthrough
+  }
+  return [
+    { urls: "stun:stun.l.google.com:19302" },
+    { urls: "stun:stun1.l.google.com:19302" },
+  ];
+})();
+
+// Optional max video bitrate (kbps) for low-bandwidth optimization
+export const MAX_VIDEO_KBPS = import.meta.env.VITE_MAX_VIDEO_KBPS ? Number(import.meta.env.VITE_MAX_VIDEO_KBPS) : null;
