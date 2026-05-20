@@ -52,6 +52,7 @@ export default {
         "pulse-dot": "pulseDot 1.5s infinite",
         "bounce-in": "bounceIn 0.5s ease-out",
         "typing": "typing 1.4s infinite",
+        "call-pulse-ring": "callPulseRing 2s ease-out infinite",
       },
       keyframes: {
         fadeIn: {
@@ -84,6 +85,10 @@ export default {
           "0%": { transform: "translateY(0)" },
           "28%": { transform: "translateY(-6px)" },
           "44%": { transform: "translateY(0)" },
+        },
+        callPulseRing: {
+          "0%": { transform: "scale(1)", opacity: "1" },
+          "100%": { transform: "scale(1.8)", opacity: "0" },
         },
       },
       backdropBlur: {

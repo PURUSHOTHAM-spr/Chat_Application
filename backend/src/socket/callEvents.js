@@ -9,6 +9,7 @@ import { getIO } from "../config/socket.js";
  * - call:ice-candidate -> forward ICE candidates
  * - call:ring -> notify callee of incoming call
  * - call:hangup -> notify remote peer to end call
+ * - call:reject -> notify caller that callee rejected
  * - call:missed -> record missed call notification
  *
  * Each event forwards the payload to the target user's personal room (userId).
@@ -44,6 +45,12 @@ const callEvents = (socket) => {
   socket.on("call:hangup", ({ to, reason }) => {
     if (!to) return;
     io.to(to).emit("call:hangup", { from: socket.userId, reason });
+  });
+
+  // Reject (callee -> caller)
+  socket.on("call:reject", ({ to, reason }) => {
+    if (!to) return;
+    io.to(to).emit("call:reject", { from: socket.userId, reason });
   });
 
   // Notify missed call (for notifications)

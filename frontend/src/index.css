@@ -149,6 +149,36 @@
   .input-focus {
     @apply focus:outline-none focus:ring-2 focus:ring-whatsapp-500/50 focus:border-whatsapp-500 transition-all duration-200;
   }
+
+  /* ── Call UI Styles ── */
+
+  /* Accept call button glow animation */
+  .call-btn-accept {
+    animation: callBtnGlow 2s ease-in-out infinite;
+  }
+
+  @keyframes callBtnGlow {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(34, 197, 94, 0.4), 0 4px 15px rgba(34, 197, 94, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 40px rgba(34, 197, 94, 0.6), 0 4px 25px rgba(34, 197, 94, 0.5);
+    }
+  }
+
+  /* Reject call button subtle pulse */
+  .call-btn-reject {
+    animation: callBtnReject 2s ease-in-out infinite;
+  }
+
+  @keyframes callBtnReject {
+    0%, 100% {
+      box-shadow: 0 0 20px rgba(239, 68, 68, 0.3), 0 4px 15px rgba(239, 68, 68, 0.2);
+    }
+    50% {
+      box-shadow: 0 0 35px rgba(239, 68, 68, 0.5), 0 4px 25px rgba(239, 68, 68, 0.4);
+    }
+  }
 }
 
 @layer utilities {
@@ -163,5 +193,10 @@
 
   .text-shadow {
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Tabular numbers for call timer */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }
