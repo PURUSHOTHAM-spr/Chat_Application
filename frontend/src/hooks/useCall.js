@@ -16,7 +16,6 @@ import { ICE_SERVERS, MAX_VIDEO_KBPS } from "../constants";
 
 const DEFAULT_ICE = {
   iceServers: ICE_SERVERS,
-  iceCandidatePoolSize: 10, // Pre-allocate candidates for faster connection
 };
 
 const createController = () => {
@@ -42,7 +41,9 @@ const createController = () => {
   let callDuration = 0;
   let durationInterval = null;
   let callerInfo = null;
-  let streamVersion = 0; // Increments on every stream change to force UI updates
+  let streamVersion = 0;
+  let iceRestartCount = 0;
+  const MAX_ICE_RESTARTS = 2;
 
   const listeners = new Set();
 
@@ -101,6 +102,7 @@ const createController = () => {
     isMuted = false;
     cameraOff = false;
     pendingCandidates = [];
+    iceRestartCount = 0;
     emitChange();
     setTimeout(() => { if (status === "ended") { status = "idle"; emitChange(); } }, 2000);
   };
@@ -180,7 +182,14 @@ const createController = () => {
         startDurationTimer();
         emitChange();
       } else if (s === "failed") {
-        try { pc.restartIce(); } catch (_) {}
+        iceRestartCount++;
+        if (iceRestartCount <= MAX_ICE_RESTARTS) {
+          console.log(`🔄 ICE restart attempt ${iceRestartCount}/${MAX_ICE_RESTARTS}`);
+          try { pc.restartIce(); } catch (_) {}
+        } else {
+          console.error("❌ ICE failed after max retries — ending call");
+          cleanupPeer();
+        }
       } else if (s === "closed" && (status === "connected" || status === "connecting")) {
         cleanupPeer();
       }
