@@ -213,7 +213,9 @@ const createController = () => {
      "call:hangup", "call:missed", "call:reject"].forEach((e) => socket.off(e));
 
     socket.on("call:offer", ({ from, offer, meta }) => {
+      console.log(`📞 OFFER RECEIVED from ${from} (type: ${meta?.type || "unknown"})`);
       if (status === "connected" || status === "connecting") {
+        console.log(`📞 Rejecting offer — already in call (status: ${status})`);
         socket.emit("call:hangup", { to: from, reason: "busy" });
         return;
       }
@@ -225,9 +227,11 @@ const createController = () => {
     });
 
     socket.on("call:answer", async ({ from, answer }) => {
-      if (!pcRef.current) return;
+      console.log(`✅ ANSWER RECEIVED from ${from}`);
+      if (!pcRef.current) { console.warn("⚠️ No peer connection when answer arrived"); return; }
       try {
         await pcRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+        console.log("✅ Remote description set from answer");
         await flushPendingCandidates();
         if (status !== "connected") { status = "connected"; startDurationTimer(); emitChange(); }
       } catch (e) { console.error("setRemoteDescription(answer) failed:", e); }
@@ -235,7 +239,9 @@ const createController = () => {
 
     socket.on("call:ice-candidate", async ({ from, candidate }) => {
       if (!candidate) return;
+      console.log(`🧊 ICE CANDIDATE RECEIVED from ${from}`);
       if (!pcRef.current?.remoteDescription) {
+        console.log("🧊 Buffering ICE candidate (no remote description yet)");
         pendingCandidates.push(candidate);
         return;
       }
