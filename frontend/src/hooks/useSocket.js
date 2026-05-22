@@ -23,6 +23,8 @@ const useSocket = () => {
     fetchConversations,
     updateUserInConversations,
     handleMessageReaction,
+    updateGroup,
+    handleRemoveGroup,
   } = useChatStore();
 
   const { addNotification } = useNotificationStore();
@@ -70,12 +72,20 @@ const useSocket = () => {
       addConversation(conversation);
     };
 
-    const handleGroupUpdated = () => {
-      fetchConversations(); // Refresh conversations list
+    const handleGroupUpdated = ({ conversation }) => {
+      if (conversation) {
+        updateGroup(conversation);
+      } else {
+        fetchConversations();
+      }
     };
 
-    const handleGroupRemoved = () => {
-      fetchConversations();
+    const handleGroupRemoved = ({ conversationId }) => {
+      if (conversationId) {
+        handleRemoveGroup(conversationId);
+      } else {
+        fetchConversations();
+      }
     };
 
     // --- Notification events ---

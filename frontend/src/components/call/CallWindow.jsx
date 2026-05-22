@@ -26,19 +26,29 @@ const CallWindow = () => {
   const { user } = useAuthStore();
   const [isMinimized, setIsMinimized] = useState(false);
 
+  const attachStream = useCallback((el, stream) => {
+    if (!el) return;
+    if (!stream) {
+      if (el.srcObject) {
+        el.srcObject = null;
+      }
+      return;
+    }
+    const trackCount = stream.getTracks().length;
+    const currentSrcObject = el.srcObject;
+    const currentTrackCount = currentSrcObject ? currentSrcObject.getTracks().length : 0;
+    if (currentSrcObject !== stream || currentTrackCount !== trackCount) {
+      console.log(`🔗 Attaching stream to element. Tracks count: ${trackCount} (was ${currentTrackCount})`);
+      el.srcObject = stream;
+    }
+    // Force play if paused (handles autoplay policy)
+    if (trackCount > 0 && el.paused) {
+      el.play().catch(() => {});
+    }
+  }, []);
+
   // ── Attach streams to media elements on every render + streamVersion change ──
   useEffect(() => {
-    const attachStream = (el, stream) => {
-      if (!el || !stream) return;
-      if (el.srcObject !== stream) {
-        el.srcObject = stream;
-      }
-      // Force play if paused (handles autoplay policy)
-      if (stream.getTracks().length > 0 && el.paused) {
-        el.play().catch(() => {});
-      }
-    };
-
     attachStream(localVideoRef.current, localStreamRef.current);
     attachStream(remoteVideoRef.current, remoteStreamRef.current);
   });
@@ -47,15 +57,10 @@ const CallWindow = () => {
   useEffect(() => {
     if (status !== "connected" && status !== "connecting") return;
     const id = setInterval(() => {
-      const el = remoteVideoRef.current;
-      const stream = remoteStreamRef.current;
-      if (el && stream && stream.getTracks().length > 0) {
-        if (el.srcObject !== stream) el.srcObject = stream;
-        if (el.paused) el.play().catch(() => {});
-      }
+      attachStream(remoteVideoRef.current, remoteStreamRef.current);
     }, 500);
     return () => clearInterval(id);
-  }, [status, streamVersion]);
+  }, [status, streamVersion, attachStream]);
 
   if (status !== "connected" && status !== "connecting") return null;
 

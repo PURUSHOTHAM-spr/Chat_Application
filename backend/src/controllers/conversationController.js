@@ -246,6 +246,14 @@ export const addGroupMembers = async (req, res, next) => {
       io.to(mId).emit("conversation:new", { conversation: populated });
     });
 
+    // Notify existing members
+    conversation.participants.forEach((p) => {
+      const pId = p._id?.toString() || p.toString();
+      if (!newMembers.includes(pId)) {
+        io.to(pId).emit("group:updated", { conversation: populated });
+      }
+    });
+
     res.json({ success: true, conversation: populated });
   } catch (error) {
     next(error);
@@ -285,6 +293,12 @@ export const removeGroupMember = async (req, res, next) => {
     // Notify removed user
     const io = getIO();
     io.to(userId).emit("group:removed", { conversationId: id });
+
+    // Notify remaining members
+    populated.participants.forEach((p) => {
+      const pId = p._id?.toString() || p.toString();
+      io.to(pId).emit("group:updated", { conversation: populated });
+    });
 
     res.json({ success: true, conversation: populated });
   } catch (error) {

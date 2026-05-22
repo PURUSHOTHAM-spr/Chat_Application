@@ -88,22 +88,60 @@ const useChatStore = create((set, get) => ({
    */
   sendMessage: async (data) => {
     set({ isSendingMessage: true });
+    const currentUser = useAuthStore.getState().user;
+    const tempId = "temp_" + Date.now();
+    const optimisticMessage = {
+      _id: tempId,
+      conversationId: data.conversationId,
+      sender: {
+        _id: currentUser?._id,
+        fullName: currentUser?.fullName,
+        avatar: currentUser?.avatar,
+      },
+      content: data.content,
+      type: data.type || "text",
+      fileName: data.fileName,
+      fileSize: data.fileSize,
+      status: "sending",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Add message to local state immediately
+    set((state) => ({
+      messages: [...state.messages, optimisticMessage],
+    }));
+
+    // Update lastMessage in conversation list
+    get().updateConversationLastMessage(data.conversationId, optimisticMessage);
+
     try {
       const res = await api.post("/messages", data);
-      // Add message to local state immediately
+      const serverMessage = res.data.message;
+
+      // Replace optimistic message with real message
       set((state) => ({
-        messages: [...state.messages, res.data.message],
-        isSendingMessage: false,
+        messages: state.messages.map((msg) =>
+          msg._id === tempId ? serverMessage : msg
+        ),
       }));
 
-      // Update lastMessage in conversation list
-      get().updateConversationLastMessage(data.conversationId, res.data.message);
-      return res.data.message;
+      // Update lastMessage in conversation list with the real message
+      get().updateConversationLastMessage(data.conversationId, serverMessage);
+      return serverMessage;
     } catch (error) {
       console.error("Failed to send message:", error);
       toast.error(error.response?.data?.message || "Failed to send message");
-      set({ isSendingMessage: false });
+
+      // Mark optimistic message as failed
+      set((state) => ({
+        messages: state.messages.map((msg) =>
+          msg._id === tempId ? { ...msg, status: "failed" } : msg
+        ),
+      }));
       return null;
+    } finally {
+      set({ isSendingMessage: false });
     }
   },
 
@@ -111,13 +149,16 @@ const useChatStore = create((set, get) => ({
    * Add a new incoming message from Socket.IO.
    */
   addIncomingMessage: (message, conversationId) => {
-    const { activeConversation } = get();
+    const { activeConversation, messages } = get();
 
     // If this message is for the active conversation, add it to messages
     if (activeConversation?._id === conversationId) {
-      set((state) => ({
-        messages: [...state.messages, message],
-      }));
+      const exists = messages.some((m) => m._id === message._id);
+      if (!exists) {
+        set((state) => ({
+          messages: [...state.messages, message],
+        }));
+      }
     }
 
     // Update conversation list
@@ -463,6 +504,106 @@ const useChatStore = create((set, get) => ({
         },
       };
     });
+  },
+
+  /**
+   * Add members to a group conversation
+   */
+  addGroupMembers: async (conversationId, userIds) => {
+    try {
+      const res = await api.post(`/conversations/${conversationId}/members`, { members: userIds });
+      const updatedConv = res.data.conversation;
+      set((state) => ({
+        conversations: state.conversations.map((c) =>
+          c._id === conversationId ? updatedConv : c
+        ),
+        activeConversation:
+          state.activeConversation?._id === conversationId
+            ? updatedConv
+            : state.activeConversation,
+      }));
+      toast.success("Members added successfully");
+      return updatedConv;
+    } catch (error) {
+      console.error("Failed to add group members:", error);
+      toast.error(error.response?.data?.message || "Failed to add group members");
+      return null;
+    }
+  },
+
+  /**
+   * Remove a member from a group or leave group
+   */
+  removeGroupMember: async (conversationId, userId) => {
+    try {
+      const res = await api.delete(`/conversations/${conversationId}/members/${userId}`);
+      const updatedConv = res.data.conversation;
+      const currentUser = useAuthStore.getState().user;
+      const isSelf = userId === currentUser?._id;
+
+      set((state) => {
+        if (isSelf) {
+          return {
+            conversations: state.conversations.filter((c) => c._id !== conversationId),
+            activeConversation:
+              state.activeConversation?._id === conversationId
+                ? null
+                : state.activeConversation,
+            messages: state.activeConversation?._id === conversationId ? [] : state.messages,
+          };
+        } else {
+          return {
+            conversations: state.conversations.map((c) =>
+              c._id === conversationId ? updatedConv : c
+            ),
+            activeConversation:
+              state.activeConversation?._id === conversationId
+                ? updatedConv
+                : state.activeConversation,
+          };
+        }
+      });
+
+      if (isSelf) {
+        toast.success("You left the group");
+      } else {
+        toast.success("Member removed successfully");
+      }
+      return updatedConv;
+    } catch (error) {
+      console.error("Failed to remove group member:", error);
+      toast.error(error.response?.data?.message || "Failed to remove group member");
+      return null;
+    }
+  },
+
+  /**
+   * Real-time socket event updates for group details/members
+   */
+  updateGroup: (conversation) => {
+    set((state) => ({
+      conversations: state.conversations.map((c) =>
+        c._id === conversation._id ? conversation : c
+      ),
+      activeConversation:
+        state.activeConversation?._id === conversation._id
+          ? conversation
+          : state.activeConversation,
+    }));
+  },
+
+  /**
+   * Real-time socket event updates when user is removed from a group
+   */
+  handleRemoveGroup: (conversationId) => {
+    set((state) => ({
+      conversations: state.conversations.filter((c) => c._id !== conversationId),
+      activeConversation:
+        state.activeConversation?._id === conversationId
+          ? null
+          : state.activeConversation,
+      messages: state.activeConversation?._id === conversationId ? [] : state.messages,
+    }));
   },
 
   // --- Reset Store ---

@@ -16,7 +16,7 @@ import { ICE_SERVERS, MAX_VIDEO_KBPS, fetchIceServers } from "../constants";
 
 const createController = () => {
   const getSock = () => getSocket();
-  let socketAttached = false;
+  let socketAttached = null;
 
   // ── Core refs ──
   const pcRef = { current: null };
@@ -91,7 +91,10 @@ const createController = () => {
       localStreamRef.current.getTracks().forEach((t) => t.stop());
       localStreamRef.current = null;
     }
-    remoteStreamRef.current = null;
+    if (remoteStreamRef.current) {
+      remoteStreamRef.current.getTracks().forEach((t) => t.stop());
+      remoteStreamRef.current = null;
+    }
     remotePeerId = null;
     callMeta = null;
     callerInfo = null;
@@ -106,10 +109,25 @@ const createController = () => {
   // ── Get user media ──
   const prepareLocalMedia = async (wantVideo) => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      const constraints = {
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
         video: wantVideo ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" } : false,
-      });
+      };
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (firstErr) {
+        if (wantVideo) {
+          console.warn("Retrying getUserMedia with simplified video constraints...", firstErr);
+          const backupConstraints = {
+            audio: true,
+            video: true,
+          };
+          stream = await navigator.mediaDevices.getUserMedia(backupConstraints);
+        } else {
+          throw firstErr;
+        }
+      }
       localStreamRef.current = stream;
       streamVersion++;
       emitChange();
@@ -202,14 +220,23 @@ const createController = () => {
     return pc;
   };
 
-  // ── Socket handlers (attached once) ──
+  // ── Socket handlers (attached once per socket instance) ──
   const attachSocketHandlers = () => {
-    if (socketAttached) return;
     const socket = getSock();
     if (!socket) return;
+    if (socketAttached === socket) return;
 
-    ["call:offer", "call:answer", "call:ice-candidate", "call:ring",
-     "call:hangup", "call:missed", "call:reject"].forEach((e) => socket.off(e));
+    // Clean up older socket instance listeners if we are swapping
+    if (socketAttached) {
+      try {
+        ["call:offer", "call:answer", "call:ice-candidate", "call:ring",
+         "call:hangup", "call:missed", "call:reject"].forEach((e) => socketAttached.off(e));
+      } catch (err) {
+        console.warn("Error cleaning up old socket listeners:", err);
+      }
+    }
+
+    console.log("🔌 Attaching call handlers to socket:", socket.id);
 
     socket.on("call:offer", ({ from, offer, meta }) => {
       console.log(`📞 OFFER RECEIVED from ${from} (type: ${meta?.type || "unknown"})`);
@@ -253,7 +280,7 @@ const createController = () => {
     socket.on("call:reject", () => cleanupPeer());
     socket.on("call:missed", ({ from, meta }) => console.log("Missed call:", from));
 
-    socketAttached = true;
+    socketAttached = socket;
   };
 
   // ── Start call (CALLER) ──
@@ -369,6 +396,7 @@ const createController = () => {
       remotePeerId, callType, callDuration, callerInfo, streamVersion,
     }),
     startCall, acceptCall, rejectCall, endCall, toggleMute, toggleCamera,
+    attachSocketHandlers,
     subscribe: (fn) => {
       listeners.add(fn);
       fn({
@@ -386,8 +414,17 @@ const controller = createController();
 export default function useCall() {
   const [state, setState] = useState(controller.getState());
   useEffect(() => {
+    controller.attachSocketHandlers();
+
+    const interval = setInterval(() => {
+      controller.attachSocketHandlers();
+    }, 2000);
+
     const unsub = controller.subscribe((s) => setState({ ...s }));
-    return () => unsub();
+    return () => {
+      unsub();
+      clearInterval(interval);
+    };
   }, []);
 
   return {
