@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getSocket } from "../lib/socket";
-import { ICE_SERVERS, MAX_VIDEO_KBPS } from "../constants";
+import { ICE_SERVERS, MAX_VIDEO_KBPS, fetchIceServers } from "../constants";
 
 /**
  * WebRTC Call Controller v3 — Production-grade implementation.
@@ -11,12 +11,8 @@ import { ICE_SERVERS, MAX_VIDEO_KBPS } from "../constants";
  * 3. Stores SDP offer during ringing for immediate use in acceptCall
  * 4. Stream version counter forces React re-renders on new tracks
  * 5. Proper cleanup prevents memory leaks and duplicate listeners
- * 6. TURN server support for cross-network connectivity
+ * 6. Dynamic TURN server credentials for cross-network connectivity
  */
-
-const DEFAULT_ICE = {
-  iceServers: ICE_SERVERS,
-};
 
 const createController = () => {
   const getSock = () => getSocket();
@@ -141,8 +137,11 @@ const createController = () => {
   };
 
   // ── Create RTCPeerConnection ──
-  const createPeerConnection = () => {
-    const pc = new RTCPeerConnection(DEFAULT_ICE);
+  const createPeerConnection = async () => {
+    // Fetch dynamic TURN credentials for cross-network connectivity
+    const iceServers = await fetchIceServers();
+    console.log("🔧 Creating PeerConnection with", iceServers.length, "ICE servers");
+    const pc = new RTCPeerConnection({ iceServers });
 
     // ─── ontrack: THE critical handler for receiving remote media ───
     // Strategy: Use event.streams[0] if available (most reliable, preserves
@@ -274,7 +273,7 @@ const createController = () => {
     pendingCandidates = [];
     emitChange();
 
-    const pc = createPeerConnection();
+    const pc = await createPeerConnection();
     const localStream = await prepareLocalMedia(type === "video");
     localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));
 
@@ -309,7 +308,7 @@ const createController = () => {
     pendingCandidates = [];
     emitChange();
 
-    const pc = createPeerConnection();
+    const pc = await createPeerConnection();
     const localStream = await prepareLocalMedia(type === "video");
     localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));
 

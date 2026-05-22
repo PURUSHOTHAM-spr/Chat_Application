@@ -68,9 +68,19 @@ export const WALLPAPERS = [
 ];
 
 // ICE servers configuration.
-// Uses Google STUN servers by default. For production cross-network calling,
-// set VITE_TURN_URL, VITE_TURN_USERNAME, VITE_TURN_CREDENTIAL env vars
-// (e.g. from Metered.ca free tier or Twilio).
+// Uses Google STUN servers + Metered.ca free TURN servers for cross-network calling.
+// Set VITE_METERED_API_KEY env var with your free Metered.ca API key.
+// Sign up free at: https://www.metered.ca/stun-turn
+
+const STUN_SERVERS = [
+  { urls: "stun:stun.l.google.com:19302" },
+  { urls: "stun:stun1.l.google.com:19302" },
+  { urls: "stun:stun2.l.google.com:19302" },
+  { urls: "stun:stun3.l.google.com:19302" },
+  { urls: "stun:stun4.l.google.com:19302" },
+];
+
+// Static fallback: STUN only (works on same network, fails across NATs)
 export const ICE_SERVERS = (() => {
   try {
     const raw = import.meta.env.VITE_ICE_SERVERS;
@@ -79,13 +89,7 @@ export const ICE_SERVERS = (() => {
     // fallthrough
   }
 
-  const servers = [
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" },
-    { urls: "stun:stun2.l.google.com:19302" },
-    { urls: "stun:stun3.l.google.com:19302" },
-    { urls: "stun:stun4.l.google.com:19302" },
-  ];
+  const servers = [...STUN_SERVERS];
 
   // Add TURN server if configured via env vars
   const turnUrl = import.meta.env.VITE_TURN_URL;
@@ -97,6 +101,48 @@ export const ICE_SERVERS = (() => {
 
   return servers;
 })();
+
+/**
+ * Fetch fresh TURN server credentials from Metered.ca free API.
+ * Returns ICE servers array with both STUN and TURN servers.
+ * Falls back to STUN-only if fetch fails or no API key is configured.
+ *
+ * Free tier: https://www.metered.ca/stun-turn (gives you an API key)
+ * Set VITE_METERED_API_KEY in your Vercel environment variables.
+ */
+let cachedTurnServers = null;
+let turnCacheTime = 0;
+const TURN_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+export const fetchIceServers = async () => {
+  // Return cached if still fresh
+  if (cachedTurnServers && (Date.now() - turnCacheTime) < TURN_CACHE_TTL) {
+    return cachedTurnServers;
+  }
+
+  const apiKey = import.meta.env.VITE_METERED_API_KEY;
+  if (!apiKey) {
+    console.warn("⚠️ No VITE_METERED_API_KEY set — using STUN only. Cross-network calls will fail.");
+    console.warn("⚠️ Sign up free at https://www.metered.ca/stun-turn and add your API key.");
+    return ICE_SERVERS;
+  }
+
+  try {
+    const resp = await fetch(
+      `https://chat.metered.live/api/v1/turn/credentials?apiKey=${apiKey}`
+    );
+    if (!resp.ok) throw new Error(`Metered API returned ${resp.status}`);
+    const turnServers = await resp.json();
+    cachedTurnServers = [...STUN_SERVERS, ...turnServers];
+    turnCacheTime = Date.now();
+    console.log("✅ TURN servers fetched:", cachedTurnServers.length, "servers");
+    return cachedTurnServers;
+  } catch (err) {
+    console.error("❌ Failed to fetch TURN credentials:", err);
+    console.warn("⚠️ Falling back to STUN-only — cross-network calls may fail.");
+    return ICE_SERVERS;
+  }
+};
 
 // Optional max video bitrate (kbps) for low-bandwidth optimization
 export const MAX_VIDEO_KBPS = import.meta.env.VITE_MAX_VIDEO_KBPS ? Number(import.meta.env.VITE_MAX_VIDEO_KBPS) : null;
