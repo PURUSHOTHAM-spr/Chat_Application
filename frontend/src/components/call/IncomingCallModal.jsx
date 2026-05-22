@@ -39,7 +39,7 @@ const IncomingCallModal = () => {
         ringtoneRef.current = { stopped: false, interval: null, audioCtx };
         playTone();
         ringtoneRef.current.interval = setInterval(playTone, 2000);
-      } catch (_) {}
+      } catch (_) { }
     }
 
     return () => {
@@ -48,7 +48,7 @@ const IncomingCallModal = () => {
         clearInterval(ringtoneRef.current.interval);
         try {
           ringtoneRef.current.audioCtx?.close();
-        } catch (_) {}
+        } catch (_) { }
         ringtoneRef.current = null;
       }
     };
