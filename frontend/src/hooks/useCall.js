@@ -40,6 +40,8 @@ const createController = () => {
   let streamVersion = 0;
   let iceRestartCount = 0;
   const MAX_ICE_RESTARTS = 2;
+  let isCaller = false;
+  let isRestartingIce = false;
 
   const listeners = new Set();
 
@@ -102,6 +104,8 @@ const createController = () => {
     cameraOff = false;
     pendingCandidates = [];
     iceRestartCount = 0;
+    isCaller = false;
+    isRestartingIce = false;
     emitChange();
     setTimeout(() => { if (status === "ended") { status = "idle"; emitChange(); } }, 2000);
   };
@@ -154,6 +158,47 @@ const createController = () => {
     } catch (e) { console.warn("Bitrate cap failed:", e); }
   };
 
+  // ── Trigger ICE restart ──
+  const triggerIceRestart = async () => {
+    if (!pcRef.current || isRestartingIce) return;
+    const pc = pcRef.current;
+    
+    isRestartingIce = true;
+    iceRestartCount++;
+    if (iceRestartCount > MAX_ICE_RESTARTS) {
+      console.error("❌ Connection failed after max ICE restarts — ending call");
+      isRestartingIce = false;
+      cleanupPeer();
+      return;
+    }
+
+    console.log(`🔄 Initiating ICE restart attempt ${iceRestartCount}/${MAX_ICE_RESTARTS}...`);
+    try {
+      pc.restartIce();
+      if (isCaller) {
+        console.log("🔄 We are the caller. Generating and sending new offer with iceRestart: true...");
+        const offer = await pc.createOffer({ iceRestart: true });
+        await pc.setLocalDescription(offer);
+        getSock()?.emit("call:offer", {
+          to: remotePeerId,
+          offer: pc.localDescription,
+          meta: { type: callType, isRestart: true }
+        });
+      } else {
+        console.log("🔄 We are the callee. Waiting for caller to send new offer...");
+      }
+      
+      // Debounce resetting the restarting flag to avoid redundant restarts in rapid succession
+      setTimeout(() => {
+        isRestartingIce = false;
+      }, 4000);
+    } catch (err) {
+      console.error("❌ ICE restart initiation failed:", err);
+      isRestartingIce = false;
+      cleanupPeer();
+    }
+  };
+
   // ── Create RTCPeerConnection ──
   const createPeerConnection = async () => {
     // Fetch dynamic TURN credentials for cross-network connectivity
@@ -186,8 +231,20 @@ const createController = () => {
     };
 
     pc.onicecandidate = (evt) => {
-      if (evt.candidate && remotePeerId) {
-        getSock()?.emit("call:ice-candidate", { to: remotePeerId, candidate: evt.candidate });
+      if (evt.candidate) {
+        const candidateStr = evt.candidate.candidate || "";
+        let type = "unknown";
+        if (candidateStr.includes("typ host")) type = "host";
+        else if (candidateStr.includes("typ srflx")) type = "srflx";
+        else if (candidateStr.includes("typ relay")) type = "relay";
+        else if (candidateStr.includes("typ prflx")) type = "prflx";
+
+        console.log(`📤 Outgoing ICE Candidate (${type}):`, candidateStr);
+        if (remotePeerId) {
+          getSock()?.emit("call:ice-candidate", { to: remotePeerId, candidate: evt.candidate });
+        }
+      } else {
+        console.log("📤 ICE candidate gathering complete");
       }
     };
 
@@ -199,21 +256,20 @@ const createController = () => {
         startDurationTimer();
         emitChange();
       } else if (s === "failed") {
-        iceRestartCount++;
-        if (iceRestartCount <= MAX_ICE_RESTARTS) {
-          console.log(`🔄 ICE restart attempt ${iceRestartCount}/${MAX_ICE_RESTARTS}`);
-          try { pc.restartIce(); } catch (_) {}
-        } else {
-          console.error("❌ ICE failed after max retries — ending call");
-          cleanupPeer();
-        }
+        triggerIceRestart();
       } else if (s === "closed" && (status === "connected" || status === "connecting")) {
         cleanupPeer();
       }
     };
 
     pc.onconnectionstatechange = () => {
-      console.log("🔗 Connection state:", pc.connectionState);
+      const cs = pc.connectionState;
+      console.log("🔗 Connection state:", cs);
+      if (cs === "failed") {
+        triggerIceRestart();
+      } else if (cs === "closed") {
+        cleanupPeer();
+      }
     };
 
     pcRef.current = pc;
@@ -238,8 +294,26 @@ const createController = () => {
 
     console.log("🔌 Attaching call handlers to socket:", socket.id);
 
-    socket.on("call:offer", ({ from, offer, meta }) => {
-      console.log(`📞 OFFER RECEIVED from ${from} (type: ${meta?.type || "unknown"})`);
+    socket.on("call:offer", async ({ from, offer, meta }) => {
+      console.log(`📞 OFFER RECEIVED from ${from} (type: ${meta?.type || "unknown"}, isRestart: ${!!meta?.isRestart})`);
+      
+      // If we are already connected to this user and this is a renegotiation or ICE restart offer
+      if ((status === "connected" || status === "connecting") && remotePeerId === from) {
+        console.log(`🔄 Renegotiation/ICE restart offer received from current peer ${from}`);
+        if (!pcRef.current) return;
+        try {
+          await pcRef.current.setRemoteDescription(new RTCSessionDescription(offer));
+          await flushPendingCandidates();
+          const answer = await pcRef.current.createAnswer();
+          await pcRef.current.setLocalDescription(answer);
+          socket.emit("call:answer", { to: from, answer: pcRef.current.localDescription });
+          console.log("✅ Renegotiation/ICE restart answer sent");
+        } catch (e) {
+          console.error("Renegotiation failed:", e);
+        }
+        return;
+      }
+
       if (status === "connected" || status === "connecting") {
         console.log(`📞 Rejecting offer — already in call (status: ${status})`);
         socket.emit("call:hangup", { to: from, reason: "busy" });
@@ -265,14 +339,26 @@ const createController = () => {
 
     socket.on("call:ice-candidate", async ({ from, candidate }) => {
       if (!candidate) return;
-      console.log(`🧊 ICE CANDIDATE RECEIVED from ${from}`);
+      const candidateStr = candidate.candidate || "";
+      let type = "unknown";
+      if (candidateStr.includes("typ host")) type = "host";
+      else if (candidateStr.includes("typ srflx")) type = "srflx";
+      else if (candidateStr.includes("typ relay")) type = "relay";
+      else if (candidateStr.includes("typ prflx")) type = "prflx";
+
+      console.log(`📥 Incoming ICE Candidate (${type}) from ${from}`);
+
       if (!pcRef.current?.remoteDescription) {
-        console.log("🧊 Buffering ICE candidate (no remote description yet)");
+        console.log(`🧊 Buffering ICE candidate (${type}) (no remote description yet)`);
         pendingCandidates.push(candidate);
         return;
       }
-      try { await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate)); }
-      catch (e) { console.warn("addIceCandidate failed:", e); }
+      try {
+        await pcRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+        console.log(`✅ Added ICE candidate (${type})`);
+      } catch (e) {
+        console.warn(`❌ Failed to add ICE candidate (${type}):`, e);
+      }
     });
 
     socket.on("call:ring", () => {});
@@ -298,6 +384,7 @@ const createController = () => {
     isMuted = false;
     cameraOff = false;
     pendingCandidates = [];
+    isCaller = true;
     emitChange();
 
     const pc = await createPeerConnection();
@@ -333,6 +420,7 @@ const createController = () => {
     isMuted = false;
     cameraOff = false;
     pendingCandidates = [];
+    isCaller = false;
     emitChange();
 
     const pc = await createPeerConnection();
