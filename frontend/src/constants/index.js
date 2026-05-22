@@ -103,16 +103,16 @@ export const ICE_SERVERS = (() => {
 })();
 
 /**
- * Fetch fresh TURN server credentials from Metered.ca free API.
+ * Fetch fresh TURN server credentials from Metered.ca API.
  * Returns ICE servers array with both STUN and TURN servers.
- * Falls back to STUN-only if fetch fails or no API key is configured.
- *
- * Free tier: https://www.metered.ca/stun-turn (gives you an API key)
- * Set VITE_METERED_API_KEY in your Vercel environment variables.
+ * Falls back to STUN-only if fetch fails.
  */
 let cachedTurnServers = null;
 let turnCacheTime = 0;
 const TURN_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+
+const METERED_API_URL =
+  "https://chatapp1234.metered.live/api/v1/turn/credentials?apiKey=a4bdc35f7b6039a292ef5743e09b37f2dca7";
 
 export const fetchIceServers = async () => {
   // Return cached if still fresh
@@ -120,17 +120,8 @@ export const fetchIceServers = async () => {
     return cachedTurnServers;
   }
 
-  const apiKey = import.meta.env.VITE_METERED_API_KEY;
-  if (!apiKey) {
-    console.warn("⚠️ No VITE_METERED_API_KEY set — using STUN only. Cross-network calls will fail.");
-    console.warn("⚠️ Sign up free at https://www.metered.ca/stun-turn and add your API key.");
-    return ICE_SERVERS;
-  }
-
   try {
-    const resp = await fetch(
-      `https://chat.metered.live/api/v1/turn/credentials?apiKey=${apiKey}`
-    );
+    const resp = await fetch(METERED_API_URL);
     if (!resp.ok) throw new Error(`Metered API returned ${resp.status}`);
     const turnServers = await resp.json();
     cachedTurnServers = [...STUN_SERVERS, ...turnServers];
