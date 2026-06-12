@@ -8,7 +8,7 @@ import { MESSAGE_STATUS } from "../../constants";
  * Message bubble — supports text, image, file, voice, and system messages.
  * Shows delivery ticks based on message status.
  */
-const MessageBubble = ({ message, isOwn }) => {
+const MessageBubble = ({ message, isOwn, searchQuery = "", isHighlighted = false }) => {
   const [showActions, setShowActions] = useState(false);
   const [showReactionPicker, setShowReactionPicker] = useState(false);
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
@@ -61,6 +61,36 @@ const MessageBubble = ({ message, isOwn }) => {
       case MESSAGE_STATUS.READ: return <IoCheckmarkDone className="w-4 h-4 tick-read" />;
       default: return <IoCheckmark className="w-4 h-4 tick-sent" />;
     }
+  };
+
+  /**
+   * Highlight matching search text within a string.
+   */
+  const highlightText = (text) => {
+    if (!searchQuery || !text) return text;
+    const q = searchQuery.toLowerCase();
+    const idx = text.toLowerCase().indexOf(q);
+    if (idx === -1) return text;
+
+    const parts = [];
+    let lastIdx = 0;
+    let searchIdx = text.toLowerCase().indexOf(q, lastIdx);
+    while (searchIdx !== -1) {
+      if (searchIdx > lastIdx) {
+        parts.push(text.substring(lastIdx, searchIdx));
+      }
+      parts.push(
+        <mark key={searchIdx} className="bg-yellow-300 dark:bg-yellow-500/40 text-inherit rounded-sm px-0.5">
+          {text.substring(searchIdx, searchIdx + searchQuery.length)}
+        </mark>
+      );
+      lastIdx = searchIdx + searchQuery.length;
+      searchIdx = text.toLowerCase().indexOf(q, lastIdx);
+    }
+    if (lastIdx < text.length) {
+      parts.push(text.substring(lastIdx));
+    }
+    return parts;
   };
 
   return (
@@ -124,8 +154,10 @@ const MessageBubble = ({ message, isOwn }) => {
           </div>
         )}
 
-        <div className={`px-3 py-1.5 rounded-xl shadow-sm animate-fade-in ${
+        <div className={`px-3 py-1.5 rounded-xl shadow-sm animate-fade-in transition-all duration-300 ${
           isOwn ? "bg-bubble-out dark:bg-bubble-outDark rounded-tr-none bubble-tail-out" : "bg-bubble-in dark:bg-bubble-inDark rounded-tl-none bubble-tail-in"
+        } ${
+          isHighlighted ? "ring-2 ring-yellow-400 dark:ring-yellow-500 ring-offset-1 dark:ring-offset-dark-1" : ""
         }`}>
           {!isOwn && message.sender?.fullName && (
             <p className="text-xs font-semibold text-whatsapp-600 dark:text-whatsapp-400 mb-0.5">{message.sender.fullName}</p>
@@ -201,7 +233,9 @@ const MessageBubble = ({ message, isOwn }) => {
           )}
 
           {message.type === "text" && (
-            <p className="text-sm text-gray-800 dark:text-gray-100 whitespace-pre-wrap break-words leading-relaxed">{message.content}</p>
+            <p className="text-sm text-gray-800 dark:text-gray-100 whitespace-pre-wrap break-words leading-relaxed">
+              {searchQuery ? highlightText(message.content) : message.content}
+            </p>
           )}
 
           <div className="flex items-center justify-end gap-1 mt-0.5 -mb-0.5">

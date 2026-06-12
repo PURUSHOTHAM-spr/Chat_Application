@@ -9,13 +9,15 @@ import useInfiniteScroll from "../../hooks/useInfiniteScroll";
 /**
  * Message list — scrollable container for messages with infinite scroll.
  * Auto-scrolls to bottom on new messages.
+ * Supports in-chat search highlighting and navigation.
  */
-const MessageList = () => {
+const MessageList = ({ searchQuery = "", highlightedMessageId = null }) => {
   const { messages, isLoadingMessages, pagination, loadMoreMessages, activeConversation, typingUsers } =
     useChatStore();
   const { user } = useAuthStore();
   const bottomRef = useRef(null);
   const containerRef = useRef(null);
+  const messageRefs = useRef({});
 
   // Infinite scroll — triggers when sentinel element at top is visible
   const topRef = useInfiniteScroll(
@@ -26,10 +28,12 @@ const MessageList = () => {
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
+    // Don't auto-scroll while searching
+    if (searchQuery) return;
     if (bottomRef.current) {
       bottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages.length]);
+  }, [messages.length, searchQuery]);
 
   // Scroll to bottom on conversation change
   useEffect(() => {
@@ -37,6 +41,16 @@ const MessageList = () => {
       bottomRef.current.scrollIntoView();
     }
   }, [activeConversation?._id]);
+
+  // Scroll to highlighted message when search navigates
+  useEffect(() => {
+    if (highlightedMessageId && messageRefs.current[highlightedMessageId]) {
+      messageRefs.current[highlightedMessageId].scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
+  }, [highlightedMessageId]);
 
   const typing = typingUsers[activeConversation?._id] || [];
 
@@ -82,13 +96,20 @@ const MessageList = () => {
 
         const msg = item.data;
         const isOwn = (msg.sender?._id || msg.sender) === user?._id;
+        const isHighlighted = highlightedMessageId === msg._id;
 
         return (
-          <MessageBubble
+          <div
             key={item.key}
-            message={msg}
-            isOwn={isOwn}
-          />
+            ref={(el) => { messageRefs.current[msg._id] = el; }}
+          >
+            <MessageBubble
+              message={msg}
+              isOwn={isOwn}
+              searchQuery={searchQuery}
+              isHighlighted={isHighlighted}
+            />
+          </div>
         );
       })}
 
@@ -122,3 +143,4 @@ const formatDateSeparator = (dateStr) => {
 };
 
 export default MessageList;
+

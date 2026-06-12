@@ -1,3 +1,4 @@
+import { useState, useCallback } from "react";
 import ChatHeader from "./ChatHeader";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
@@ -9,11 +10,16 @@ import { useEffect } from "react";
  */
 const ChatWindow = () => {
   const { activeConversation, markAsRead, setShowMobileSidebar, setActiveConversation } = useChatStore();
+  const [searchState, setSearchState] = useState({ query: "", highlightedMessageId: null });
 
   const handleBack = () => {
     setShowMobileSidebar(true);
     setActiveConversation(null);
   };
+
+  const handleSearchChange = useCallback((state) => {
+    setSearchState(state);
+  }, []);
 
   // Mark messages as read when opening a conversation
   useEffect(() => {
@@ -22,9 +28,14 @@ const ChatWindow = () => {
     }
   }, [activeConversation?._id, markAsRead]);
 
+  // Reset search when conversation changes
+  useEffect(() => {
+    setSearchState({ query: "", highlightedMessageId: null });
+  }, [activeConversation?._id]);
+
   return (
     <div className="flex flex-col h-full">
-      <ChatHeader onBack={handleBack} />
+      <ChatHeader onBack={handleBack} onSearchChange={handleSearchChange} />
 
       {/* Chat background with pattern */}
       <div className="flex-1 overflow-hidden chat-bg-pattern relative"
@@ -42,7 +53,10 @@ const ChatWindow = () => {
           <div className="absolute inset-0 bg-black/20 dark:bg-black/40" />
         )}
         <div className="relative h-full">
-          <MessageList />
+          <MessageList
+            searchQuery={searchState.query}
+            highlightedMessageId={searchState.highlightedMessageId}
+          />
         </div>
       </div>
 
@@ -52,3 +66,4 @@ const ChatWindow = () => {
 };
 
 export default ChatWindow;
+
