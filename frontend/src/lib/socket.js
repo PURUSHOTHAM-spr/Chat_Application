@@ -10,6 +10,20 @@ let socket = null;
  */
 let connectionGracePeriod = false;
 
+const socketCreationListeners = new Set();
+
+/**
+ * Register a listener to be called when a socket instance is created.
+ * Immediately invokes the callback if a socket is already present.
+ */
+export const onSocketCreated = (fn) => {
+  socketCreationListeners.add(fn);
+  if (socket) {
+    try { fn(socket); } catch (e) { console.error("Error in onSocketCreated:", e); }
+  }
+  return () => socketCreationListeners.delete(fn);
+};
+
 /**
  * Initialize Socket.IO connection with JWT authentication.
  * Returns the existing connection if already connected.
@@ -29,6 +43,11 @@ export const connectSocket = (token) => {
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
     timeout: 20000,
+  });
+
+  // Trigger all registered listeners with the newly created socket instance
+  socketCreationListeners.forEach((fn) => {
+    try { fn(socket); } catch (e) { console.error("Error in socket creation listener:", e); }
   });
 
   socket.on("connect", () => {

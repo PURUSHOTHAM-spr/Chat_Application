@@ -48,7 +48,7 @@ const MessageInput = () => {
     }
   }, [isRecording]);
 
-  const { activeConversation, sendMessage, uploadFile } = useChatStore();
+  const { activeConversation, sendMessage, uploadFile, isSendingMessage } = useChatStore();
   const { user, toggleBlockUser } = useAuthStore();
   const { startTyping, stopTyping } = useTyping(activeConversation?._id);
 
@@ -61,6 +61,8 @@ const MessageInput = () => {
   const handleSend = async () => {
     if (!text.trim() && !preview) return;
     if (!activeConversation) return;
+    // Guard against duplicate sends while a message is in-flight
+    if (isSendingMessage) return;
 
     if (preview) {
       setIsUploading(true);
@@ -83,15 +85,17 @@ const MessageInput = () => {
         setIsUploading(false);
       }
     } else {
+      // Clear text IMMEDIATELY before the async call to prevent duplicate sends
+      const messageText = text.trim();
+      setText("");
+      stopTyping();
       await sendMessage({
         conversationId: activeConversation._id,
-        content: text.trim(),
+        content: messageText,
         type: "text",
       });
     }
 
-    setText("");
-    stopTyping();
     inputRef.current?.focus();
   };
 
@@ -339,7 +343,7 @@ const MessageInput = () => {
           <button
             id="send-button"
             onClick={handleSend}
-            disabled={isUploading}
+            disabled={isUploading || isSendingMessage}
             className="p-3 bg-whatsapp-500 text-white rounded-full hover:bg-whatsapp-600 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-whatsapp-500/25 flex-shrink-0 disabled:opacity-50"
           >
             {isUploading ? (
