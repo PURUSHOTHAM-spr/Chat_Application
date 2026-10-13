@@ -10,6 +10,8 @@ import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import conversationRoutes from "./routes/conversationRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
+import scheduledRoutes from "./routes/scheduledRoutes.js";
+import expenseRoutes from "./routes/expenseRoutes.js";
 
 const app = express();
 
@@ -39,6 +41,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/conversations", conversationRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/scheduled-messages", scheduledRoutes);
+app.use("/api/expenses", expenseRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { IoClose, IoSearch } from "react-icons/io5";
+import { IoClose, IoSearch, IoHourglassOutline } from "react-icons/io5";
 import Modal from "../common/Modal";
 import Avatar from "../common/Avatar";
 import api from "../../lib/axios";
@@ -15,6 +15,9 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [groupName, setGroupName] = useState("");
   const [groupDescription, setGroupDescription] = useState("");
+  const [isTemporary, setIsTemporary] = useState(false);
+  const [duration, setDuration] = useState(24); // default 24 hours
+  const [customHours, setCustomHours] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const { createGroup, setActiveConversation } = useChatStore();
 
@@ -59,10 +62,16 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
   const handleCreate = async () => {
     if (!groupName.trim() || selectedUsers.length < 2) return;
     setIsCreating(true);
+
+    const effectiveDuration = isTemporary
+      ? (duration === -1 ? (parseInt(customHours, 10) || 24) : duration)
+      : null;
+
     const conversation = await createGroup({
       name: groupName.trim(),
       description: groupDescription.trim(),
       participants: selectedUsers.map((u) => u._id),
+      duration: effectiveDuration,
     });
     if (conversation) {
       setActiveConversation(conversation);
@@ -77,6 +86,9 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
     setSelectedUsers([]);
     setGroupName("");
     setGroupDescription("");
+    setIsTemporary(false);
+    setDuration(24);
+    setCustomHours("");
     onClose();
   };
 
@@ -167,13 +179,81 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
             rows={2}
             maxLength={150}
           />
+
+          {/* Temporary Group Option */}
+          <div className="p-3.5 bg-gray-50 dark:bg-dark-3/60 rounded-xl border border-gray-100 dark:border-dark-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                  <IoHourglassOutline className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Temporary Group</h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Auto-expires and dissolves after time limit</p>
+                </div>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isTemporary}
+                  onChange={(e) => setIsTemporary(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-dark-4 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-whatsapp-500"></div>
+              </label>
+            </div>
+
+            {isTemporary && (
+              <div className="pt-2 border-t border-gray-200/60 dark:border-dark-4/60 space-y-2 animate-fade-in">
+                <label className="text-xs font-medium text-gray-600 dark:text-gray-300">Expires in:</label>
+                <div className="grid grid-cols-3 gap-1.5">
+                  {[
+                    { label: "1 hour", value: 1 },
+                    { label: "6 hours", value: 6 },
+                    { label: "24 hours", value: 24 },
+                    { label: "3 days", value: 72 },
+                    { label: "1 week", value: 168 },
+                    { label: "Custom", value: -1 },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setDuration(opt.value)}
+                      className={`py-1.5 px-2 rounded-lg text-xs font-medium transition-all ${
+                        duration === opt.value
+                          ? "bg-whatsapp-500 text-white shadow-sm"
+                          : "bg-white dark:bg-dark-4 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-dark-4 hover:border-whatsapp-500"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+
+                {duration === -1 && (
+                  <div className="pt-1">
+                    <input
+                      type="number"
+                      min={1}
+                      max={720}
+                      value={customHours}
+                      onChange={(e) => setCustomHours(e.target.value)}
+                      placeholder="Enter hours (e.g. 12)"
+                      className="w-full px-3 py-2 bg-white dark:bg-dark-4 border border-gray-200 dark:border-dark-4 rounded-xl text-xs text-gray-900 dark:text-white input-focus"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="flex gap-3">
             <button onClick={() => setStep(1)} className="flex-1 py-2.5 border border-gray-200 dark:border-dark-4 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-dark-3 transition-colors">
               Back
             </button>
             <button
               onClick={handleCreate}
-              disabled={!groupName.trim() || isCreating}
+              disabled={!groupName.trim() || isCreating || (isTemporary && duration === -1 && !customHours)}
               className="flex-1 py-2.5 bg-whatsapp-500 text-white font-medium rounded-xl hover:bg-whatsapp-600 disabled:opacity-40 transition-all"
             >
               {isCreating ? "Creating..." : "Create Group"}

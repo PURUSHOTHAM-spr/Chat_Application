@@ -21,9 +21,11 @@ const useChatStore = create((set, get) => ({
   // UI State to prevent prop drilling
   showMobileSidebar: true,
   showProfilePanel: false,
+  showScheduledPanel: false,
 
   setShowMobileSidebar: (show) => set({ showMobileSidebar: show }),
   setShowProfilePanel: (show) => set({ showProfilePanel: show }),
+  setShowScheduledPanel: (show) => set({ showScheduledPanel: show }),
 
   /**
    * Fetch all conversations for the sidebar.
@@ -606,6 +608,62 @@ const useChatStore = create((set, get) => ({
     }));
   },
 
+  // --- Scheduled Messages ---
+  scheduledMessages: [],
+  isLoadingScheduled: false,
+
+  fetchScheduledMessages: async () => {
+    set({ isLoadingScheduled: true });
+    try {
+      const res = await api.get("/scheduled-messages");
+      set({ scheduledMessages: res.data.scheduledMessages, isLoadingScheduled: false });
+    } catch (error) {
+      console.error("Failed to fetch scheduled messages:", error);
+      set({ isLoadingScheduled: false });
+    }
+  },
+
+  createScheduledMessage: async (data) => {
+    try {
+      const res = await api.post("/scheduled-messages", data);
+      set((state) => ({
+        scheduledMessages: [...state.scheduledMessages, res.data.scheduledMessage],
+      }));
+      toast.success("Message scheduled!");
+      return res.data.scheduledMessage;
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to schedule message");
+      return null;
+    }
+  },
+
+  cancelScheduledMessage: async (id) => {
+    try {
+      await api.delete(`/scheduled-messages/${id}`);
+      set((state) => ({
+        scheduledMessages: state.scheduledMessages.filter((m) => m._id !== id),
+      }));
+      toast.success("Scheduled message cancelled");
+    } catch (error) {
+      toast.error("Failed to cancel scheduled message");
+    }
+  },
+
+  // --- Temporary Group Expiry ---
+  handleGroupExpired: (conversationId) => {
+    set((state) => ({
+      conversations: state.conversations.map((c) =>
+        c._id === conversationId
+          ? { ...c, groupInfo: { ...c.groupInfo, isExpired: true } }
+          : c
+      ),
+      activeConversation:
+        state.activeConversation?._id === conversationId
+          ? { ...state.activeConversation, groupInfo: { ...state.activeConversation.groupInfo, isExpired: true } }
+          : state.activeConversation,
+    }));
+  },
+
   // --- Reset Store ---
   clearChatStore: () => {
     set({
@@ -615,6 +673,7 @@ const useChatStore = create((set, get) => ({
       onlineUsers: new Set(),
       typingUsers: {},
       pagination: null,
+      scheduledMessages: [],
     });
   },
 }));

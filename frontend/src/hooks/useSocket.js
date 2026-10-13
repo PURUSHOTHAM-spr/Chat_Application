@@ -4,6 +4,7 @@ import { SOCKET_EVENTS } from "../constants";
 import useChatStore from "../store/useChatStore";
 import useNotificationStore from "../store/useNotificationStore";
 import useAuthStore from "../store/useAuthStore";
+import useExpenseStore from "../store/useExpenseStore";
 
 /**
  * Custom hook that sets up all Socket.IO event listeners.
@@ -25,10 +26,12 @@ const useSocket = () => {
     handleMessageReaction,
     updateGroup,
     handleRemoveGroup,
+    handleGroupExpired,
   } = useChatStore();
 
   const { addNotification } = useNotificationStore();
   const { forceLogout } = useAuthStore();
+  const { handleNewExpense, handleExpenseSettled } = useExpenseStore();
 
   useEffect(() => {
     const socket = getSocket();
@@ -88,6 +91,14 @@ const useSocket = () => {
       }
     };
 
+    // --- Group Expiry events ---
+    const handleExpired = ({ conversationId, groupName }) => {
+      handleGroupExpired(conversationId);
+      import("react-hot-toast").then((m) =>
+        m.default(`⏰ Temporary group "${groupName}" has expired`, { icon: "⏰" })
+      );
+    };
+
     // --- Notification events ---
     const handleNotification = (notification) => {
       addNotification(notification);
@@ -109,6 +120,15 @@ const useSocket = () => {
       updateUserInConversations(updatedUser);
     };
 
+    // --- Expense events ---
+    const onExpenseNew = ({ expense, conversationId }) => {
+      handleNewExpense(expense, conversationId);
+    };
+
+    const onExpenseSettled = ({ expense }) => {
+      handleExpenseSettled(expense);
+    };
+
     // Register all listeners
     socket.on(SOCKET_EVENTS.MESSAGE_NEW, handleNewMessage);
     socket.on(SOCKET_EVENTS.MESSAGE_READ, handleMessageRead);
@@ -120,7 +140,10 @@ const useSocket = () => {
     socket.on(SOCKET_EVENTS.CONVERSATION_NEW, handleNewConversation);
     socket.on(SOCKET_EVENTS.GROUP_UPDATED, handleGroupUpdated);
     socket.on(SOCKET_EVENTS.GROUP_REMOVED, handleGroupRemoved);
+    socket.on(SOCKET_EVENTS.GROUP_EXPIRED, handleExpired);
     socket.on(SOCKET_EVENTS.NOTIFICATION_NEW, handleNotification);
+    socket.on(SOCKET_EVENTS.EXPENSE_NEW, onExpenseNew);
+    socket.on(SOCKET_EVENTS.EXPENSE_SETTLED, onExpenseSettled);
     socket.on("session:expired", handleSessionExpired);
     socket.on("user:updated", handleUserUpdated);
     socket.on("message:reaction", handleMessageReaction);
@@ -137,7 +160,10 @@ const useSocket = () => {
       socket.off(SOCKET_EVENTS.CONVERSATION_NEW, handleNewConversation);
       socket.off(SOCKET_EVENTS.GROUP_UPDATED, handleGroupUpdated);
       socket.off(SOCKET_EVENTS.GROUP_REMOVED, handleGroupRemoved);
+      socket.off(SOCKET_EVENTS.GROUP_EXPIRED, handleExpired);
       socket.off(SOCKET_EVENTS.NOTIFICATION_NEW, handleNotification);
+      socket.off(SOCKET_EVENTS.EXPENSE_NEW, onExpenseNew);
+      socket.off(SOCKET_EVENTS.EXPENSE_SETTLED, onExpenseSettled);
       socket.off("session:expired", handleSessionExpired);
       socket.off("user:updated", handleUserUpdated);
       socket.off("message:reaction", handleMessageReaction);
@@ -147,3 +173,4 @@ const useSocket = () => {
 };
 
 export default useSocket;
+

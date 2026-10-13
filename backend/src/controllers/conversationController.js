@@ -106,11 +106,12 @@ export const createDirectConversation = async (req, res, next) => {
 /**
  * Create a group conversation
  * POST /api/conversations/group
- * Body: { name, participants, description?, avatar? }
+ * Body: { name, participants, description?, avatar?, duration? }
+ * duration is in hours (null = permanent group)
  */
 export const createGroupConversation = async (req, res, next) => {
   try {
-    const { name, participants, description, avatar } = req.body;
+    const { name, participants, description, avatar, duration } = req.body;
 
     if (!name || !participants || participants.length < 2) {
       return res.status(400).json({
@@ -127,6 +128,12 @@ export const createGroupConversation = async (req, res, next) => {
     // Include the creator in participants
     const allParticipants = [...new Set([req.user._id.toString(), ...participants])];
 
+    // Calculate expiry time for temporary groups
+    let expiresAt = null;
+    if (duration && duration > 0) {
+      expiresAt = new Date(Date.now() + duration * 60 * 60 * 1000);
+    }
+
     const conversation = await Conversation.create({
       type: "group",
       participants: allParticipants,
@@ -135,6 +142,8 @@ export const createGroupConversation = async (req, res, next) => {
         description: description || "",
         avatar: avatar || "",
         admin: req.user._id,
+        expiresAt,
+        isExpired: false,
       },
     });
 
@@ -144,10 +153,11 @@ export const createGroupConversation = async (req, res, next) => {
     );
 
     // Create system message for group creation
+    const durationText = duration ? ` (expires in ${duration}h)` : "";
     await Message.create({
       conversationId: conversation._id,
       sender: req.user._id,
-      content: `${req.user.fullName} created group "${name}"`,
+      content: `${req.user.fullName} created group "${name}"${durationText}`,
       type: "system",
     });
 

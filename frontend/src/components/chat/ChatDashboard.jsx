@@ -6,11 +6,13 @@ import useChatStore from "../../store/useChatStore";
 import useSocket from "../../hooks/useSocket";
 import ProfileSettings from "../profile/ProfileSettings";
 import NotificationsPanel from "../notifications/NotificationsPanel";
-import IncomingCallModal from "../call/IncomingCallModal";
-import CallWindow from "../call/CallWindow";
+import ScheduledMessagesPanel from "./ScheduledMessagesPanel";
+import ExpensePanel from "../expense/ExpensePanel";
+import ExpenseSplitModal from "../expense/ExpenseSplitModal";
+
 
 /**
- * Main chat dashboard layout — WhatsApp-style with sidebar + chat window.
+ * Main chat dashboard layout — modern two-panel with sidebar + chat window.
  * Responsive: on mobile, shows either sidebar or chat window.
  */
 const ChatDashboard = () => {
@@ -40,7 +42,7 @@ const ChatDashboard = () => {
 
   return (
     <div className="h-screen flex bg-[#d1d7db] dark:bg-dark-1 overflow-hidden">
-      {/* WhatsApp-style top header bar */}
+      {/* Top header bar */}
       <div className="absolute top-0 left-0 right-0 h-32 header-gradient z-0" />
 
       {/* Main container */}
@@ -77,9 +79,16 @@ const ChatDashboard = () => {
 
       {/* Notifications Panel */}
       <NotificationsPanel />
-      {/* Incoming call and active call UI */}
-      <IncomingCallModal />
-      <CallWindow />
+
+      {/* Scheduled Messages Slide-in Panel */}
+      <ScheduledMessagesPanel />
+
+      {/* Group Expenses Slide-in Panel */}
+      <ExpensePanel />
+
+      {/* Split Expense Modal */}
+      <ExpenseSplitModal />
+
     </div>
   );
 };

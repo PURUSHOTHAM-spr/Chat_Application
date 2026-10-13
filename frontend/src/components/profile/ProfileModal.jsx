@@ -26,7 +26,7 @@ const ProfileModal = ({ user, isOpen, onClose }) => {
         <div className="w-full text-left space-y-3 pt-2 border-t border-gray-100 dark:border-dark-4">
           <div>
             <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">About</p>
-            <p className="text-sm text-gray-700 dark:text-gray-300">{user.about || "Hey there! I am using WhatsApp"}</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300">{user.about || "Hey there! I am using Chat Sphere"}</p>
           </div>
           <div>
             <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Status</p>

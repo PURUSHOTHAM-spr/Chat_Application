@@ -2,7 +2,7 @@ import Avatar from "../common/Avatar";
 import Badge from "../common/Badge";
 import useChatStore from "../../store/useChatStore";
 import useAuthStore from "../../store/useAuthStore";
-import { IoCheckmark, IoCheckmarkDone } from "react-icons/io5";
+import { IoCheckmark, IoCheckmarkDone, IoHourglassOutline } from "react-icons/io5";
 import {
   getConversationName,
   getConversationAvatar,
@@ -57,15 +57,27 @@ const ChatListItem = ({ conversation, isActive, onClick }) => {
 
       <div className="flex-1 min-w-0 text-left">
         <div className="flex items-center justify-between">
-          <h3
-            className={`text-sm font-semibold truncate ${
-              isActive
-                ? "text-whatsapp-700 dark:text-whatsapp-400"
-                : "text-gray-900 dark:text-white"
-            }`}
-          >
-            {name}
-          </h3>
+          <div className="flex items-center gap-1.5 min-w-0 truncate">
+            <h3
+              className={`text-sm font-semibold truncate ${
+                isActive
+                  ? "text-whatsapp-700 dark:text-whatsapp-400"
+                  : "text-gray-900 dark:text-white"
+              }`}
+            >
+              {name}
+            </h3>
+            {conversation.type === "group" && conversation.groupInfo?.isExpired && (
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-medium flex-shrink-0">
+                Expired
+              </span>
+            )}
+            {conversation.type === "group" && conversation.groupInfo?.expiresAt && !conversation.groupInfo?.isExpired && (
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-medium flex items-center gap-0.5 flex-shrink-0" title="Temporary Group">
+                <IoHourglassOutline className="w-2.5 h-2.5" /> Temp
+              </span>
+            )}
+          </div>
           <span
             className={`text-xs flex-shrink-0 ml-2 ${
               unreadCount > 0

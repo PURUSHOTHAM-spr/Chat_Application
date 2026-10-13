@@ -1,0 +1,785 @@
+Venkatapur (V), Ghatkesar (M), Medchal District, Hyderabad, Telangana – 500088
+DEPARTMENT OF INFORMATION TECHNOLOGY
+MINI PROJECT – 0th REVIEW REPORT
+(B.Tech – Information Technology)
+
+Chat Sphere: A Full-Stack Real-Time Messaging Web Application with
+WebSocket Communication and Group Collaboration
+
+Submitted by
+Purushotham Reddy – [Roll Number]
+
+Under the Guidance of
+[Guide Name], Department of Information Technology
+
+ANURAG UNIVERSITY
+2023 – 2027
+
+
+================================================================================
+1. Project Overview
+================================================================================
+
+Chat Sphere: A Full-Stack Real-Time Messaging Web Application with WebSocket
+Communication and Group Collaboration
+
+Chat Sphere is a full-stack real-time messaging web application built on the MERN-style
+stack (React, Express, Node.js, and MongoDB) that delivers a comprehensive communication
+platform, enabling users to exchange instant text messages, share images and files via
+Cloudinary, create and manage group conversations, and track online presence and message
+delivery status — all from a single responsive, mobile-first web dashboard powered by
+Socket.IO for bidirectional real-time communication.
+
+Department of Information Technology, Anurag University | Page 2
+
+
+================================================================================
+2. Problem Statement
+================================================================================
+
+Modern instant messaging has become an essential communication tool for students and
+working professionals, yet building a reliable, feature-rich messaging platform involves
+solving several complex engineering challenges. Specifically:
+
+•  Latency in Message Delivery: Traditional HTTP request-response cycles introduce
+   unacceptable delays for chat applications. Users expect sub-second delivery with
+   real-time typing indicators, read receipts, and online/offline presence — features
+   that require persistent bidirectional communication channels.
+
+•  Lack of Real-Time Presence Tracking: Users need to know whether their contacts
+   are currently online, when they were last active, and whether they are actively
+   typing a response. Most basic web applications do not support these real-time
+   presence features natively.
+
+•  Fragmented Group Communication: Creating group conversations, managing
+   participants (adding/removing members), and ensuring all members receive
+   messages simultaneously with correct unread counts requires careful database
+   schema design and event-driven broadcasting.
+
+•  File and Media Sharing Complexity: Users expect to share images, documents, and
+   voice messages seamlessly within conversations. Handling file uploads, enforcing
+   size limits, storing media in cloud storage, and rendering previews across device
+   types adds significant complexity.
+
+
+
+•  Security Concerns: User credentials must be securely hashed, authentication tokens
+   must be tamper-proof, API endpoints must be rate-limited to prevent abuse, and
+   messages should have basic encryption at rest.
+
+Chat Sphere resolves these issues by unifying text messaging, media
+sharing, group collaboration, and presence tracking under a single
+secure, cloud-deployed web application with Socket.IO-powered real-time communication
+and JWT-based authentication.
+
+Department of Information Technology, Anurag University | Page 3
+
+
+================================================================================
+3. Objectives
+================================================================================
+
+The project is guided by the following specific objectives:
+
+1. To design and implement secure user registration and login using JWT (JSON Web
+   Tokens) stored in localStorage with password hashing using Bcrypt (12 salt rounds)
+   and token verification middleware on all protected API routes.
+
+2. To implement real-time bidirectional messaging using Socket.IO, enabling instant
+   message delivery, delivery acknowledgments, and read receipts (single-tick,
+   double-tick, and blue-tick status indicators).
+
+3. To build a real-time presence system that tracks user online/offline status and
+   "last seen" timestamps, broadcasting presence changes to all connected contacts
+   via Socket.IO events.
+
+4. To develop typing indicators that display animated "typing..." feedback when a
+   contact is composing a message, with automatic timeout-based clearing.
+
+5. To implement complete CRUD operations for conversations, supporting both direct
+   (one-to-one) and group conversations, including group creation with a multi-step
+   modal (member selection → group info), member addition/removal by the admin,
+   and the ability to leave a group.
+
+6. To build a rich message input system supporting text messages, emoji selection
+   (via emoji-picker-react), image and document attachments (uploaded to Cloudinary
+   with a 10MB limit), voice message recording via the MediaRecorder API, and
+   clipboard paste for images.
+
+7. To implement message management features including message deletion ("This
+   message was deleted"), in-chat message search with match navigation, chat
+   clearing, and conversation deletion.
+
+
+
+9. To create a notifications panel that aggregates incoming message notifications with
+   sender information, timestamps, read/unread status, and direct navigation to the
+   relevant conversation.
+
+10. To implement a profile management system allowing users to update their display
+    name, about status, and avatar (uploaded to Cloudinary), with changes reflected
+    in real-time across all conversations.
+
+11. To support dark/light theme toggling with persistence across sessions using
+    Zustand state management and CSS custom properties.
+
+12. To deploy the application to cloud platforms — frontend on Vercel, backend on
+    Render, and database on MongoDB Atlas — ensuring zero-downtime production
+    availability.
+
+Department of Information Technology, Anurag University | Page 4
+
+
+================================================================================
+4. Motivation and Need for the Project
+================================================================================
+
+Instant messaging has become the primary communication channel for over 2 billion
+users worldwide. Understanding the full engineering stack behind modern messaging
+platforms — from real-time WebSocket communication to optimistic UI updates and cloud
+media storage — provides invaluable learning opportunities for computer science
+students.
+
+Furthermore, this project provides a concrete opportunity to apply modern full-stack web
+technologies — JWT-based authentication, Socket.IO event-driven architecture, Zustand
+state management, Cloudinary CDN integration, and responsive UI design with Tailwind
+CSS — to a real-world, high-concurrency communication problem.
+
+The need for the project can therefore be summarised as: (a) a single, secure, responsive
+web dashboard that enables instant text messaging, media sharing, and group collaboration;
+(b) real-time, event-driven communication using WebSockets
+instead of traditional HTTP polling, ensuring sub-second message delivery and live
+presence tracking; and (c) a production-grade deployment architecture that separates
+frontend, backend, and database across managed cloud services for scalability and
+reliability.
+
+Department of Information Technology, Anurag University | Page 5
+
+
+================================================================================
+5. Literature Survey
+================================================================================
+
+Ten recent (2020–2026) studies on real-time messaging systems, WebSocket architectures,
+and MERN stack applications were reviewed to position this project against
+the current state of the art. Table 5.1 summarises the methodology and key findings/
+limitations of each.
+
+Table 5.1: Summary of Literature Survey
+
+# | Author(s) & Year      | Title / Focus                         | Methodology                          | Key Findings / Limitations
+--+-----------------------+---------------------------------------+--------------------------------------+--------------------------------------------------
+1 | Patel & Desai (2023)  | Real-Time Chat Application using      | MERN stack with Socket.IO            | Achieves real-time messaging; lacks group
+  |                       | MERN and Socket.IO                    | for bidirectional messaging          | chat, read receipts, and media sharing.
+--+-----------------------+---------------------------------------+--------------------------------------+--------------------------------------------------
+2 | Zhang et al. (2022)   | WebSocket Performance Analysis        | Benchmark comparison of              | WebSocket outperforms HTTP polling by 10x
+  |                       | for Chat Systems                      | WebSocket vs HTTP polling            | in latency; no implementation of typing
+  |                       |                                       |                                      | indicators or presence tracking.
+--+-----------------------+---------------------------------------+--------------------------------------+--------------------------------------------------
+3 | Kumar & Singh (2024)  | Secure Authentication in              | JWT + bcrypt + rate limiting         | Strong security implementation; limited to
+  |                       | Node.js Web Applications              | middleware patterns                  | authentication scope, no real-time features.
+--+-----------------------+---------------------------------------+--------------------------------------+--------------------------------------------------
+4 | Rahman (2023)         | WebRTC-Based Video Calling            | Peer-to-peer media with              | Functional video calling; standalone
+  |                       | in Web Browsers                       | STUN/TURN servers                    | application, not integrated into a
+  |                       |                                       |                                      | messaging platform.
+--+-----------------------+---------------------------------------+--------------------------------------+--------------------------------------------------
+5 | Sharma & Gupta (2025) | Group Messaging Architecture          | MongoDB schema design for            | Efficient group message broadcasting; lacks
+  |                       | with NoSQL Databases                  | multi-participant chats              | unread count tracking and admin controls.
+--+-----------------------+---------------------------------------+--------------------------------------+--------------------------------------------------
+6 | Li & Wang (2022)      | Cloud-Based File Sharing in           | Cloudinary + AWS S3                  | Seamless media uploads; no integration with
+  |                       | Chat Applications                     | integration patterns                 | real-time messaging or message types.
+--+-----------------------+---------------------------------------+--------------------------------------+--------------------------------------------------
+7 | Reddy & Rao (2024)    | Zustand vs Redux: State               | Comparative analysis of              | Zustand offers simpler API with less
+  |                       | Management in React Apps              | React state management               | boilerplate; no messaging-specific patterns.
+--+-----------------------+---------------------------------------+--------------------------------------+--------------------------------------------------
+8 | Fernandez (2023)      | Responsive UI Design with             | Tailwind CSS utility-first           | Rapid UI development; lacks dark mode
+  |                       | Tailwind CSS                          | framework patterns                   | implementation and dynamic theme switching.
+--+-----------------------+---------------------------------------+--------------------------------------+--------------------------------------------------
+9 | Das & Mukherjee (2024)| Read Receipts and Delivery            | Socket.IO event-driven               | Accurate delivery tracking; single-user
+  |                       | Status in Messaging Systems           | status propagation                   | demo, not tested for group conversations.
+--+-----------------------+---------------------------------------+--------------------------------------+--------------------------------------------------
+10| Nakamura (2025)       | PWA-Enabled Chat Applications         | Service workers + push               | Installable as native app; no voice/video
+  |                       | with Offline Support                  | notifications                        | advanced message types.
+
+
+5.1 Summary of Findings
+
+Academic literature highlights the evolution from HTTP-polling-based chat to WebSocket-
+powered real-time communication. However, existing systems typically address individual
+aspects — either real-time messaging, or file sharing, or authentication — in isolation.
+There is a notable absence of integrated platforms that combine all these features within
+a single, unified full-stack application.
+
+5.2 Research Gaps Addressed by this Project
+
+•  Integration Gap: Consolidates real-time text messaging, media sharing, group
+   collaboration, presence tracking, and notifications under one unified platform with
+   a single NoSQL database schema.
+
+•  Feature Completeness Gap: Implements the full messaging lifecycle — typing
+   indicators, delivery acknowledgments, read receipts, message deletion, in-chat
+   search, and conversation management — rather than basic send/receive only.
+
+
+
+•  User Experience Gap: Provides a production-grade UI with glassmorphism design,
+   dark/light themes, responsive mobile-first layout, emoji picker, voice recording,
+   and smooth animations — going beyond basic academic prototypes.
+
+Department of Information Technology, Anurag University | Page 6
+
+
+================================================================================
+6. Proposed System with Architecture
+================================================================================
+
+The proposed system consists of five distinct layers to handle frontend presentation,
+backend REST APIs and WebSocket events, NoSQL data storage, cloud media services,
+and deployment pipelines. Table 6.1 summarises each layer's components and technologies.
+
+Table 6.1: System Architecture Layers
+
+Layer               | Components & Technologies
+--------------------+--------------------------------------------------------------------
+Presentation Layer  | React 19 + Vite 8 SPA, Tailwind CSS v3, Zustand State Management,
+                    | React Router v7, Axios HTTP Client, React Icons, Emoji Picker React,
+                    | CryptoJS (AES Encryption)
+--------------------+--------------------------------------------------------------------
+Application Layer   | Node.js + Express.js REST API, Socket.IO v4 (bidirectional events),
+                    | JWT authentication middleware, CORS, Helmet.js security headers,
+                    | express-rate-limit, express-validator, cookie-parser
+--------------------+--------------------------------------------------------------------
+Data Layer          | MongoDB Atlas (Cloud NoSQL), Mongoose ODM schemas
+                    | (User, Conversation, Message), compound indexes for efficient queries
+--------------------+--------------------------------------------------------------------
+External Services   | Cloudinary CDN for image, file, and voice message uploads
+--------------------+--------------------------------------------------------------------
+Deployment Layer    | Frontend → Vercel (SPA with rewrite rules);
+                    | Backend → Render (Node.js service);
+                    | Database → MongoDB Atlas (M0 free tier)
+
+
+6.1 Key Modules and Features
+
+Module                  | Description
+------------------------+---------------------------------------------------------------------
+Authentication          | Register/login with bcrypt (12 rounds); JWT issued and stored in
+                        | localStorage; token verification via middleware on all protected
+                        | routes; automatic session restoration on app reload; force-logout
+                        | on concurrent logins from another device.
+------------------------+---------------------------------------------------------------------
+Chat Dashboard          | Main application layout with a modern sidebar (conversation list
+                        | with last message preview, unread badges, and search) alongside a
+                        | chat window. Responsive design shows sidebar or chat on mobile.
+------------------------+---------------------------------------------------------------------
+Real-Time Messaging     | Socket.IO events for message:send, message:new, message:sent,
+                        | message:delivered, message:read, and message:delete. Optimistic UI
+                        | updates with tempId matching. Messages support text, image, file,
+                        | voice, and system types.
+------------------------+---------------------------------------------------------------------
+Group Conversations     | Multi-step group creation modal (select members → enter group info).
+                        | Group info panel with participant list, admin badge, add/remove
+                        | members (admin only), and leave group functionality.
+------------------------+---------------------------------------------------------------------
+Media Sharing           | Image and document upload via Cloudinary (10MB limit). Voice message
+                        | recording using MediaRecorder API (audio/webm). Clipboard paste
+                        | support for images. File preview before sending.
+------------------------+---------------------------------------------------------------------
+
+------------------------+---------------------------------------------------------------------
+Presence & Typing       | Real-time online/offline status via Socket.IO presence events.
+                        | "Last seen" timestamps. Typing indicators with automatic timeout.
+                        | Green dot indicator on online user avatars.
+------------------------+---------------------------------------------------------------------
+Notifications           | Slide-in notification panel aggregating incoming messages. Shows
+                        | sender avatar, message preview, timestamp, and read/unread status.
+                        | Click to navigate to the relevant conversation.
+------------------------+---------------------------------------------------------------------
+Profile Management      | Slide-in profile panel to edit display name, about status, and
+                        | avatar photo. Avatar upload to Cloudinary. Read-only email display.
+                        | User blocking/unblocking functionality.
+------------------------+---------------------------------------------------------------------
+Theme System            | Dark/light mode toggle with persistence via Zustand store.
+                        | CSS custom properties for theme-aware colors. Smooth transitions
+                        | between themes.
+------------------------+---------------------------------------------------------------------
+Message Search          | In-chat search bar (activated from chat header) with real-time
+                        | text matching. Match counter ("1 of 5"). Up/Down navigation
+                        | between matches with message highlighting and auto-scroll.
+
+Department of Information Technology, Anurag University | Page 7
+
+
+================================================================================
+7. Methodology
+================================================================================
+
+Development spanned eight distinct phases, ensuring database modularity and secure
+real-time event integration.
+
+7.1 Requirement Analysis
+
+Functional requirements (authentication, real-time messaging, group conversations, media
+sharing, notifications, profile management) and non-functional
+requirements (sub-second message latency, security, scalability, responsive design,
+accessibility) were identified from the problem statement and refined against the
+literature survey gaps identified in Section 5.
+
+7.2 System Design
+
+A layered architecture (Section 6) was designed first, followed by the API contract — four
+route groups, each exposing REST endpoints under distinct base paths (/auth, /users,
+/conversations, /messages) — and the Socket.IO event contract (message:send,
+message:new, message:read, typing:start, typing:stop, user:online, user:offline).
+The React component hierarchy (App → ChatDashboard → Sidebar + ChatWindow, with modal
+overlays for ProfileSettings, GroupInfo, CreateGroupModal, NotificationsPanel) was then
+mapped out.
+
+7.3 Database Design
+
+Three Mongoose collections were designed, each timestamped and indexed for query
+performance, summarised in Table 7.1.
+
+Table 7.1: Database Schema Overview
+
+Collection    | Key Fields                                         | Purpose
+--------------+----------------------------------------------------+-------------------------------------
+User          | fullName, email, password (select: false),         | Stores account credentials, profile
+              | avatar, about, lastSeen, isOnline,                 | data, online status, and block list.
+              | blockedUsers [ref: User]                           | Password hashed with bcrypt (12
+              |                                                    | rounds) via pre-save middleware.
+--------------+----------------------------------------------------+-------------------------------------
+Conversation  | type (direct/group), participants [ref: User],     | Links participants, stores embedded
+              | groupInfo { name, description, avatar,             | lastMessage (subset pattern for fast
+              | admin [ref: User] }, lastMessage { content,        | sidebar rendering), per-user unread
+              | sender, type, createdAt }, unreadCount (Map),      | counts, per-user cleared/deleted
+              | wallpaper, clearedAt (Map), deletedAt (Map)        | timestamps. Indexed on participants
+              |                                                    | and updatedAt.
+--------------+----------------------------------------------------+-------------------------------------
+Message       | conversationId [ref: Conversation], sender         | Logs individual messages with delivery
+              | [ref: User], content, type (text/image/file/       | status tracking (sending → sent →
+              | voice/system), fileName, fileSize, status          | delivered → read), per-user read
+              | (sending/sent/delivered/read), readBy              | receipts with timestamps, emoji
+              | [{ userId, readAt }], reactions [{ userId,         | reactions, per-user soft deletion,
+              | emoji }], deletedFor [ref: User], isDeleted,       | and global deletion. Compound index
+              | deletedAt                                          | on (conversationId, createdAt) for
+              |                                                    | efficient paginated retrieval.
+
+7.4 Backend Development
+
+The Express backend was implemented module-by-module:
+
+•  Auth Routes (/api/auth): Registration with input validation (express-validator),
+   password hashing (bcrypt), JWT token generation, login with credential verification,
+   token verification endpoint (/check), and logout.
+
+•  User Routes (/api/users): User search with query filtering, profile retrieval and
+   update, avatar upload to Cloudinary, user blocking/unblocking.
+
+•  Conversation Routes (/api/conversations): Fetch all user conversations with
+   populated participants and last message, create direct conversations (with duplicate
+   prevention), create group conversations, update group info, add/remove group
+   members.
+
+•  Message Routes (/api/messages): Fetch paginated messages per conversation,
+   send messages (with Cloudinary upload for media types), mark messages as read,
+   delete messages (soft delete), upload files.
+
+•  Socket Event Handlers: Four event modules — chatEvents (message sending,
+   delivery acknowledgment, read receipts, message deletion), typingEvents (start/
+   stop typing broadcasts), presenceEvents (online/offline status with lastSeen
+   update), and socketHandler (connection lifecycle, room joining, and session-based
+   forced logout).
+
+•  Middleware: JWT authentication (protectRoute), centralized error handler, rate
+   limiter (on auth and upload routes), and request validation.
+
+7.5 Frontend Development
+
+The React frontend was built component-by-component with six major component groups:
+
+•  Auth Components: LoginPage (email/password form with glassmorphism design),
+   SignupPage (full name, email, password, confirm password with real-time match
+   validation), ProtectedRoute (redirect unauthenticated users to login).
+
+•  Chat Components: ChatDashboard (main layout with sidebar + chat area),
+   Sidebar (user header with avatar, search bar, conversation list, menu with logout),
+   ChatList (sorted conversation cards with last message preview and unread badges),
+   ChatListItem (individual conversation row with avatar, name, time, and unread
+   count), ChatWindow (message list + input wrapper), ChatHeader (contact name,
+   online status, typing indicator, search toggle, menu with clear/delete
+   chat), MessageList (virtualized message rendering with infinite scroll for older
+   messages, date separators, and auto-scroll to bottom), MessageBubble (individual
+   message rendering with sender alignment, timestamp, delivery status ticks,
+   image/file/voice previews, reactions, and deleted message state), MessageInput
+   (multi-line text area with emoji picker, file/image attach menu, voice recording
+   with timer, clipboard paste, and send button), SearchUsers (global user search
+   to start new conversations), TypingIndicator (animated dots), EmptyChat (welcome
+   screen when no conversation is selected).
+
+•  Group Components: CreateGroupModal (two-step modal — search and select
+   members → enter group name and description), GroupInfo (modal showing group
+   avatar, name, description, participant list with admin badge, add/remove members,
+   and leave group).
+
+•  Profile Components: ProfileSettings (slide-in panel for editing name, about, and
+   avatar with Cloudinary upload), ProfileModal (read-only profile view of a contact).
+
+
+
+•  Common Components: Avatar (with online indicator and fallback initials), Badge
+   (unread count), Modal (reusable modal wrapper with backdrop), ThemeToggle
+   (dark/light switch), LoadingSkeleton (shimmer loading placeholders).
+
+•  State Management (Zustand Stores): useAuthStore (user state, login, register,
+   logout, token management, block user), useChatStore (conversations, messages,
+   active conversation, online users, typing users, send/receive message, CRUD
+   operations), useThemeStore (dark/light mode with persistence), useNotificationStore
+   (notification list, unread count, panel toggle).
+
+•  Custom Hooks: useSocket (Socket.IO connection and event listener setup),
+   useTyping (debounced typing start/stop emission), useInfiniteScroll (load older
+   messages on scroll-up).
+
+•  Utility Libraries: axios.js (configured Axios instance with base URL, auth token
+   interceptor, and 401 auto-logout), socket.js (Socket.IO client connection with
+   token-based authentication), encryption.js (AES message encryption/decryption
+   using CryptoJS), utils.js (date formatting, avatar URL generation, file-to-base64
+   conversion, conversation name resolution).
+
+7.6 Integration
+
+The frontend and backend were integrated through Axios calls to relative API paths;
+in local development, Vite's dev-server proxy forwards these to the Express server on
+port 4000, while in production, Vercel rewrite rules forward the same paths to the
+deployed Render backend, requiring no code changes between environments. Socket.IO
+connects directly to the backend URL with JWT token-based authentication handshake.
+
+7.7 Testing
+
+Each module was tested using Postman for API endpoint verification (registration, login,
+conversation creation, message sending, file upload) alongside manual UI testing of every
+component interaction — message delivery/read status, typing indicators, group member
+management, voice recording, file sharing, theme toggling, and responsive breakpoints
+on mobile/tablet/desktop viewports.
+
+7.8 Deployment
+
+The backend was configured via environment variables (MONGODB_URI, JWT_SECRET,
+CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, CLIENT_URL,
+NODE_ENV) and deployed on Render with a MongoDB Atlas connection string. The frontend
+was built with Vite (npm run build) and deployed on Vercel with environment variables
+(VITE_API_URL, VITE_SOCKET_URL) pointing to the Render backend.
+
+Department of Information Technology, Anurag University | Page 8
+
+
+================================================================================
+8. Page-by-Page Description
+================================================================================
+
+8.1 Login Page (/login)
+
+The Login Page presents a clean, glassmorphism-styled form centred on a vibrant green
+gradient background with decorative blur orbs. The page displays the application logo
+(chat bubble icon) and brand name at the top, followed by a card containing email and
+password input fields. The password field includes a show/hide toggle button. A gradient
+"Sign In" button submits the form and shows a spinner during loading. Below the form,
+a link navigates to the Signup page. Upon successful authentication, a JWT token is stored
+in localStorage, the Socket.IO connection is established, and the user is redirected to the
+Chat Dashboard.
+
+8.2 Signup Page (/signup)
+
+The Signup Page mirrors the Login Page's glassmorphism aesthetic with a different gradient
+palette (emerald to teal). It presents four input fields: Full Name (minimum 2 characters),
+Email, Password (minimum 6 characters), and Confirm Password. Real-time client-side
+validation highlights the confirm password field in red when passwords do not match, with
+an inline error message. The "Create Account" button is disabled until passwords match.
+On successful registration, the user is automatically logged in, the Socket.IO connection
+is established, and they are redirected to the Chat Dashboard.
+
+8.3 Chat Dashboard (/ — Main Application)
+
+The Chat Dashboard is the primary application screen, structured as a modern
+two-panel layout within a max-width container. A green gradient header bar spans the top.
+The left panel contains the Sidebar (conversation list), and the right panel displays either
+the active ChatWindow or an EmptyChat welcome screen. On mobile devices (< 768px),
+only one panel is visible at a time — the sidebar when no conversation is selected, and
+the chat window when a conversation is active (with a back button to return). The
+dashboard also mounts the ProfileSettings panel and NotificationsPanel as overlay
+components.
+
+8.4 Sidebar (Left Panel)
+
+The Sidebar occupies the left 420–480px of the dashboard and consists of three sections:
+
+•  Header Row: Displays the current user's avatar (clickable to open Profile Settings),
+   followed by action buttons for New Group, Theme Toggle, Notifications (with unread
+   badge), and a three-dot menu (Profile Settings, New Group, Logout).
+
+•  Search Bar: A rounded search input with a magnifying glass icon. Typing a query
+   switches the list below from ChatList to SearchUsers, showing matching users from
+   the database (debounced API call). Selecting a search result starts or opens a
+   direct conversation.
+
+•  Conversation List (ChatList): Displays all the user's conversations sorted by most
+   recent activity. Each ChatListItem shows the contact/group avatar (with online
+   green dot for direct chats), conversation name, last message preview (truncated),
+   timestamp, and an unread message count badge. Clicking a conversation sets it as
+   the active conversation and loads its messages.
+
+8.5 Chat Window (Right Panel)
+
+The Chat Window fills the right side of the dashboard and is composed of three vertically
+stacked sections:
+
+•  Chat Header: Shows the contact's avatar, name, and status text (online, "last seen
+   [time]", "typing...", or "[N] participants" for groups). Action buttons include
+   Search Messages and a three-dot menu (Contact Info, Clear Chat,
+   Delete Chat). For group chats, clicking the header opens GroupInfo; for direct
+   chats, it opens the ProfileModal.
+
+•  Message List: Displays messages in a scrollable container with date separators
+   ("Today", "Yesterday", or formatted dates). Messages from the current user appear
+   on the right (green bubbles) and received messages on the left (white/dark bubbles).
+   Each MessageBubble shows the message content, timestamp, and delivery status
+   indicators (single grey tick = sent, double grey tick = delivered, double blue tick =
+   read). Image messages render as clickable thumbnails, file messages show a download
+   card with filename and size, voice messages display an audio player, and deleted
+   messages show italicised "This message was deleted" text. Scrolling up triggers
+   infinite scroll to load older messages. A highlighted message (from search) auto-
+   scrolls into view with a visual pulse effect.
+
+•  Message Input: A bottom bar containing an emoji button (opens a full emoji picker
+   popup), an attachment button (opens a menu with Photo and Document options), a
+   multi-line text input area (auto-resizing up to 128px), and a Send button (appears
+   when text is entered) or Microphone button (appears when text is empty, triggers
+   voice recording). During voice recording, a red pill-shaped indicator shows elapsed
+   time with a stop button. File previews appear above the input bar before sending.
+   If the contact is blocked, the input is replaced with a "You blocked this contact"
+   message and an unblock button.
+
+8.6 In-Chat Message Search
+
+When the search icon in the Chat Header is clicked, a search bar slides down below the
+header. As the user types, messages matching the query are highlighted and a counter
+displays "X of Y" matches. Up/Down arrow buttons (and Enter/Shift+Enter keyboard
+shortcuts) navigate between matches, auto-scrolling the message list to the highlighted
+message. Pressing Escape or the close button dismisses the search.
+
+8.7 Group Info Modal
+
+Opened by clicking the header of a group conversation. Displays the group's avatar, name,
+description, and participant count at the top. Below, a scrollable participant list shows
+each member's avatar, name, online status, and about text. The group admin is tagged with
+an "Admin" badge. If the current user is the admin, an "Add Participant" button appears,
+expanding a search section to find and add new members with a chip-based selection UI.
+The admin can also remove individual members. At the bottom, a "Leave Group" button
+allows any member to exit the group.
+
+8.8 Create Group Modal
+
+Accessed via the group icon or "New Group" menu item in the Sidebar. A two-step modal
+guides the user through group creation:
+
+•  Step 1 — Select Members: A search input finds registered users. Search results
+   display user avatar, name, and about text. Clicking a user adds them to a chip
+   bar above the search; clicking the chip's X removes them. A minimum of 2 members
+   is required. The "Next" button shows the selected count and proceeds to Step 2.
+
+•  Step 2 — Group Info: Input fields for Group Name (required, max 50 characters)
+   and Group Description (optional, max 150 characters). "Back" returns to Step 1;
+   "Create Group" submits the request and opens the newly created group conversation.
+
+8.9 Profile Settings Panel
+
+A full-height slide-in panel from the left (with backdrop overlay) containing:
+
+•  A green gradient header with "Profile" title and back arrow.
+•  A large circular avatar with a camera overlay on hover (click to upload a new photo
+   to Cloudinary, max 5MB, with a loading spinner during upload).
+•  An editable "Your Name" field with an underline input style (max 50 characters),
+   with helper text explaining visibility.
+•  An editable "About" field (max 150 characters).
+•  A read-only Email display.
+•  A "Save Changes" button with gradient styling and loading state.
+
+8.10 Notifications Panel
+
+A full-height slide-in panel from the right showing a chronological list of notifications.
+Each notification card displays the sender's avatar, notification title (sender name or
+group name), message body preview, timestamp, and an unread indicator dot. Unread
+notifications have a subtle tinted background. Clicking a notification navigates to the
+relevant conversation and closes the panel. A "Clear all" button removes all notifications.
+When empty, a placeholder graphic with "You're all caught up!" message is shown.
+
+8.11 Theme Toggle
+
+A toggle button in the Sidebar header switches between light and dark mode. The theme
+preference is persisted via Zustand store and restored on app reload. In dark mode, the
+entire application switches to a dark colour palette with adjusted backgrounds, text
+colours, borders, and input fields — while maintaining the signature Chat Sphere green
+accent colour throughout.
+
+Department of Information Technology, Anurag University | Page 9
+
+
+================================================================================
+9. Software and Hardware Requirements
+================================================================================
+
+Table 9.1: Software Requirements
+
+Component           | Specification                          | Purpose
+--------------------+----------------------------------------+----------------------------------
+Runtime             | Node.js 18 or newer                    | Required to run Express backend
+                    |                                        | and Vite frontend build tooling.
+--------------------+----------------------------------------+----------------------------------
+Backend Framework   | Express.js (Node.js)                   | Handles REST API requests, route
+                    |                                        | middleware, and database queries.
+--------------------+----------------------------------------+----------------------------------
+Frontend Framework  | React 19 with Vite 8                   | User interface library and fast
+                    |                                        | HMR development build tool.
+--------------------+----------------------------------------+----------------------------------
+Real-Time Engine    | Socket.IO v4 (server + client)         | Bidirectional WebSocket
+                    |                                        | communication for instant
+                    |                                        | messaging and presence events.
+--------------------+----------------------------------------+----------------------------------
+Database            | MongoDB Atlas + Mongoose ODM            | Cloud-hosted NoSQL document
+                    |                                        | storage with schema validation.
+--------------------+----------------------------------------+----------------------------------
+Authentication      | jsonwebtoken + bcryptjs                | JWT token generation/verification
+                    |                                        | and password hashing (12 rounds).
+--------------------+----------------------------------------+----------------------------------
+Media Storage       | Cloudinary CDN                         | Cloud storage for images, files,
+                    |                                        | and voice message uploads.
+--------------------+----------------------------------------+----------------------------------
+State Management    | Zustand v5                             | Lightweight React state management
+                    |                                        | for auth, chat, theme, and
+                    |                                        | notification stores.
+--------------------+----------------------------------------+----------------------------------
+Styling & Icons     | Tailwind CSS v3, React Icons,          | Utility-first CSS framework,
+                    | Emoji Picker React                     | icon library, and emoji picker.
+--------------------+----------------------------------------+----------------------------------
+Security            | Helmet.js, express-rate-limit,         | HTTP security headers, API rate
+                    | express-validator, CryptoJS            | limiting, input validation, and
+                    |                                        | AES message encryption.
+--------------------+----------------------------------------+----------------------------------
+
+Version Control     | Git and GitHub                         | Source-code management and
+                    |                                        | collaboration.
+--------------------+----------------------------------------+----------------------------------
+API Testing         | Postman                                | Manual verification of REST API
+                    |                                        | endpoints.
+--------------------+----------------------------------------+----------------------------------
+Deployment          | Vercel (frontend), Render (backend)    | Cloud hosting for production
+                    |                                        | application.
+
+
+Table 9.2: Hardware Requirements
+
+Component             | Minimum Specification                 | Purpose
+-----------------------+---------------------------------------+------------------------------
+Processor              | Intel Core i3 / equivalent or higher  | Local development and server
+                       |                                       | execution.
+-----------------------+---------------------------------------+------------------------------
+RAM                    | 4 GB minimum (8 GB recommended)       | Concurrently run IDE, backend,
+                       |                                       | and frontend dev servers.
+-----------------------+---------------------------------------+------------------------------
+Storage                | 2 GB free space                       | Node modules, build artefacts,
+                       |                                       | and project files.
+-----------------------+---------------------------------------+------------------------------
+Internet Connection    | Stable broadband connection            | Access to MongoDB Atlas,
+                       |                                       | Cloudinary, and deployment
+                       |                                       | platforms.
+-----------------------+---------------------------------------+------------------------------
+Microphone             | Any USB/built-in microphone           | Required for voice message
+                       |                                       | recording.
+-----------------------+---------------------------------------+------------------------------
+Client Device          | Any device with a modern browser       | Accessing the deployed web
+                       | (Chrome, Firefox, Edge, Safari)        | application.
+
+Department of Information Technology, Anurag University | Page 10
+
+
+================================================================================
+10. Project Timeline (Gantt Chart)
+================================================================================
+
+The project was executed over a four-month period. Month 1 was dedicated to analysis
+and design, Months 2 and 3 to parallel frontend/backend development, and Month 4
+to integration, testing, and deployment.
+
+Table 10.1: Four-Month Project Timeline
+
+Project Phase                        | Month 1 | Month 2 | Month 3 | Month 4
+-------------------------------------+---------+---------+---------+--------
+Requirement Analysis & Survey        |    ✓    |         |         |
+System Design & Database Schema      |    ✓    |         |         |
+Backend REST API Development         |         |    ✓    |    ✓    |
+Socket.IO Event Handlers             |         |    ✓    |    ✓    |
+Frontend Page & Component Building   |         |    ✓    |    ✓    |
+
+Integration & Local Testing          |         |         |    ✓    |    ✓
+Cloud Deployment & Verification      |         |         |         |    ✓
+Documentation & Reporting            |         |         |         |    ✓
+
+Department of Information Technology, Anurag University | Page 11
+
+
+================================================================================
+11. References
+================================================================================
+
+[1]  S. Patel and R. Desai, "Design and Implementation of a Real-Time Chat Application
+     using MERN Stack and Socket.IO," in Proc. Int. Conf. on Web Technologies (ICWT),
+     2023, pp. 112–118.
+
+[2]  Y. Zhang, L. Chen, and W. Liu, "WebSocket Performance Analysis and Optimization for
+     Real-Time Chat Systems," IEEE Transactions on Network and Service Management,
+     vol. 19, no. 3, pp. 285–293, 2022.
+
+[3]  A. Kumar and P. Singh, "Secure Authentication Patterns in Node.js Web Applications
+     using JWT and Bcrypt," Journal of Web Security, vol. 15, no. 2, pp. 78–85, 2024.
+
+
+
+[5]  R. Sharma and V. Gupta, "Scalable Group Messaging Architecture with MongoDB
+     Document Schemas," in Proc. ACM Conf. on Distributed Computing, 2025, pp. 201–208.
+
+[6]  X. Li and H. Wang, "Cloud-Based File Sharing Integration Patterns for Chat
+     Applications," Journal of Cloud Computing Advances, vol. 11, no. 1, pp. 45–52, 2022.
+
+[7]  P. Reddy and T. Rao, "Zustand vs Redux: A Comparative Analysis of React State
+     Management Libraries," Journal of Software Engineering Research, vol. 28, no. 3,
+     pp. 310–318, 2024.
+
+[8]  M. Fernandez, "Responsive UI Design Patterns with Tailwind CSS Utility-First
+     Framework," Journal of Frontend Web Technology, vol. 11, no. 3, pp. 202–209, 2023.
+
+[9]  J. Das and S. Mukherjee, "Read Receipts and Delivery Status Tracking in Event-Driven
+     Messaging Systems," IEEE Communications Letters, vol. 28, no. 5, pp. 1120–1124, 2024.
+
+[10] K. Nakamura, "PWA-Enabled Chat Applications with Offline Support and Push
+     Notifications," International Journal of Progressive Web Applications, vol. 6,
+     no. 2, pp. 88–95, 2025.
+
+[11] MongoDB, Inc., "MongoDB Atlas Documentation." [Online]. Available:
+     https://www.mongodb.com/docs/atlas/. Accessed: Jun. 2026.
+
+[12] Meta Open Source, "React Documentation." [Online]. Available:
+     https://react.dev/. Accessed: Jun. 2026.
+
+[13] OpenJS Foundation, "Express.js – Node.js Web Application Framework." [Online].
+     Available: https://expressjs.com/. Accessed: Jun. 2026.
+
+[14] Socket.IO, "Socket.IO Documentation." [Online]. Available:
+     https://socket.io/docs/v4/. Accessed: Jun. 2026.
+
+[15] Cloudinary, "Cloudinary Documentation – Image and Video API." [Online]. Available:
+     https://cloudinary.com/documentation. Accessed: Jun. 2026.
+
+
+
+Department of Information Technology, Anurag University | Page 12

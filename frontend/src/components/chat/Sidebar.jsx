@@ -4,6 +4,7 @@ import {
   IoEllipsisVertical,
   IoNotifications,
   IoPeople,
+  IoTime,
 } from "react-icons/io5";
 import ChatList from "./ChatList";
 import SearchUsers from "./SearchUsers";
@@ -78,6 +79,16 @@ const Sidebar = () => {
                   className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-4 transition-colors"
                 >
                   New Group
+                </button>
+                <button
+                  onClick={() => {
+                    useChatStore.getState().setShowScheduledPanel(true);
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-4 transition-colors flex items-center justify-between"
+                >
+                  <span>Scheduled Messages</span>
+                  <IoTime className="w-4 h-4 text-whatsapp-500" />
                 </button>
                 <button
                   onClick={() => {

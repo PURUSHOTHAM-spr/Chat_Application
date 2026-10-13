@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { IoCheckmark, IoCheckmarkDone, IoTrash, IoDownload, IoPlay, IoPause } from "react-icons/io5";
 import { formatFullTime, formatFileSize } from "../../lib/utils";
 import useChatStore from "../../store/useChatStore";
+import useExpenseStore from "../../store/useExpenseStore";
 import { MESSAGE_STATUS } from "../../constants";
 
 /**
@@ -29,11 +30,24 @@ const MessageBubble = ({ message, isOwn, searchQuery = "", isHighlighted = false
 
   // System messages
   if (message.type === "system") {
+    const isExpenseMsg = message.content?.includes("💰");
     return (
       <div className="flex justify-center my-2">
-        <span className="px-3 py-1 bg-yellow-50/90 dark:bg-yellow-900/20 backdrop-blur-sm text-xs text-yellow-700 dark:text-yellow-400 rounded-lg italic">
-          {message.content}
-        </span>
+        {isExpenseMsg ? (
+          <div className="flex items-center gap-2.5 px-3.5 py-2 bg-emerald-50/90 dark:bg-emerald-950/30 backdrop-blur-sm border border-emerald-200/50 dark:border-emerald-900/40 text-xs text-emerald-850 dark:text-emerald-300 rounded-xl shadow-sm">
+            <span>{message.content}</span>
+            <button
+              onClick={() => useExpenseStore.getState().setShowExpensePanel(true)}
+              className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-[11px] font-semibold transition-colors flex-shrink-0"
+            >
+              View Expenses
+            </button>
+          </div>
+        ) : (
+          <span className="px-3 py-1 bg-yellow-50/90 dark:bg-yellow-900/20 backdrop-blur-sm text-xs text-yellow-700 dark:text-yellow-400 rounded-lg italic">
+            {message.content}
+          </span>
+        )}
       </div>
     );
   }

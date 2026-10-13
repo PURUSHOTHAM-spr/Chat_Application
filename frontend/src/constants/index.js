@@ -32,9 +32,14 @@ export const SOCKET_EVENTS = {
   CONVERSATION_NEW: "conversation:new",
   GROUP_UPDATED: "group:updated",
   GROUP_REMOVED: "group:removed",
+  GROUP_EXPIRED: "group:expired",
 
   // Notifications
   NOTIFICATION_NEW: "notification:new",
+
+  // Expenses
+  EXPENSE_NEW: "expense:new",
+  EXPENSE_SETTLED: "expense:settled",
 };
 
 // Message types
@@ -67,73 +72,4 @@ export const WALLPAPERS = [
   "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80",
 ];
 
-// ICE servers configuration.
-// Uses Google STUN servers + Metered.ca free TURN servers for cross-network calling.
-// Set VITE_METERED_API_KEY env var with your free Metered.ca API key.
-// Sign up free at: https://www.metered.ca/stun-turn
 
-const STUN_SERVERS = [
-  { urls: "stun:stun.l.google.com:19302" },
-  { urls: "stun:stun1.l.google.com:19302" },
-  { urls: "stun:stun2.l.google.com:19302" },
-  { urls: "stun:stun3.l.google.com:19302" },
-  { urls: "stun:stun4.l.google.com:19302" },
-];
-
-// Static fallback: STUN only (works on same network, fails across NATs)
-export const ICE_SERVERS = (() => {
-  try {
-    const raw = import.meta.env.VITE_ICE_SERVERS;
-    if (raw) return JSON.parse(raw);
-  } catch (e) {
-    // fallthrough
-  }
-
-  const servers = [...STUN_SERVERS];
-
-  // Add TURN server if configured via env vars
-  const turnUrl = import.meta.env.VITE_TURN_URL;
-  const turnUser = import.meta.env.VITE_TURN_USERNAME;
-  const turnCred = import.meta.env.VITE_TURN_CREDENTIAL;
-  if (turnUrl && turnUser && turnCred) {
-    servers.push({ urls: turnUrl, username: turnUser, credential: turnCred });
-  }
-
-  return servers;
-})();
-
-/**
- * Fetch fresh TURN server credentials from Metered.ca API.
- * Returns ICE servers array with both STUN and TURN servers.
- * Falls back to STUN-only if fetch fails.
- */
-let cachedTurnServers = null;
-let turnCacheTime = 0;
-const TURN_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
-
-const METERED_API_URL =
-  "https://chatapp1234.metered.live/api/v1/turn/credentials?apiKey=a4bdc35f7b6039a292ef5743e09b37f2dca7";
-
-export const fetchIceServers = async () => {
-  // Return cached if still fresh
-  if (cachedTurnServers && (Date.now() - turnCacheTime) < TURN_CACHE_TTL) {
-    return cachedTurnServers;
-  }
-
-  try {
-    const resp = await fetch(METERED_API_URL);
-    if (!resp.ok) throw new Error(`Metered API returned ${resp.status}`);
-    const turnServers = await resp.json();
-    cachedTurnServers = [...STUN_SERVERS, ...turnServers];
-    turnCacheTime = Date.now();
-    console.log("✅ TURN servers fetched:", cachedTurnServers.length, "servers");
-    return cachedTurnServers;
-  } catch (err) {
-    console.error("❌ Failed to fetch TURN credentials:", err);
-    console.warn("⚠️ Falling back to STUN-only — cross-network calls may fail.");
-    return ICE_SERVERS;
-  }
-};
-
-// Optional max video bitrate (kbps) for low-bandwidth optimization
-export const MAX_VIDEO_KBPS = import.meta.env.VITE_MAX_VIDEO_KBPS ? Number(import.meta.env.VITE_MAX_VIDEO_KBPS) : null;

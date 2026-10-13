@@ -4,7 +4,7 @@ import { IoEye, IoEyeOff, IoChatbubbles } from "react-icons/io5";
 import useAuthStore from "../../store/useAuthStore";
 
 /**
- * Login page with WhatsApp-inspired design and glassmorphism.
+ * Login page with modern design and glassmorphism.
  */
 const LoginPage = () => {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -31,7 +31,7 @@ const LoginPage = () => {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 backdrop-blur-xl rounded-3xl mb-4 shadow-lg">
             <IoChatbubbles className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white text-shadow">WhatsApp</h1>
+          <h1 className="text-3xl font-bold text-white text-shadow">Chat Sphere</h1>
           <p className="text-white/80 mt-2">Welcome back! Sign in to continue</p>
         </div>
 

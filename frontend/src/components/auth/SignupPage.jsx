@@ -4,7 +4,7 @@ import { IoEye, IoEyeOff, IoPersonAdd } from "react-icons/io5";
 import useAuthStore from "../../store/useAuthStore";
 
 /**
- * Signup page with WhatsApp-inspired design.
+ * Signup page with modern design.
  */
 const SignupPage = () => {
   const [formData, setFormData] = useState({
@@ -45,7 +45,7 @@ const SignupPage = () => {
             <IoPersonAdd className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-white text-shadow">Create Account</h1>
-          <p className="text-white/80 mt-2">Join WhatsApp and start chatting</p>
+          <p className="text-white/80 mt-2">Join Chat Sphere and start chatting</p>
         </div>
 
         {/* Card */}

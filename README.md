@@ -1,6 +1,6 @@
-# 💬 WhatsApp Clone — Full-Stack Real-Time Messaging
+# 💬 Chat Sphere — Full-Stack Real-Time Messaging
 
-A production-ready WhatsApp clone built with React, Node.js, Socket.IO, and MongoDB.
+A production-ready real-time messaging platform built with React, Node.js, Socket.IO, and MongoDB.
 
 ![Tech Stack](https://img.shields.io/badge/React-18-blue) ![Node](https://img.shields.io/badge/Node.js-20-green) ![Socket.IO](https://img.shields.io/badge/Socket.IO-4-black) ![MongoDB](https://img.shields.io/badge/MongoDB-8-darkgreen)
 

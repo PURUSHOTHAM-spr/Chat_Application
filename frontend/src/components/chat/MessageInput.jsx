@@ -8,6 +8,7 @@ import {
   IoMic,
   IoClose,
   IoStop,
+  IoTime,
 } from "react-icons/io5";
 import EmojiPicker from "emoji-picker-react";
 import useChatStore from "../../store/useChatStore";
@@ -20,6 +21,9 @@ const MessageInput = () => {
   const [text, setText] = useState("");
   const [showEmoji, setShowEmoji] = useState(false);
   const [showAttach, setShowAttach] = useState(false);
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [scheduleDateTime, setScheduleDateTime] = useState("");
+  const [isScheduling, setIsScheduling] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [preview, setPreview] = useState(null);
   const [isRecording, setIsRecording] = useState(false);
@@ -48,7 +52,7 @@ const MessageInput = () => {
     }
   }, [isRecording]);
 
-  const { activeConversation, sendMessage, uploadFile, isSendingMessage } = useChatStore();
+  const { activeConversation, sendMessage, uploadFile, isSendingMessage, createScheduledMessage } = useChatStore();
   const { user, toggleBlockUser } = useAuthStore();
   const { startTyping, stopTyping } = useTyping(activeConversation?._id);
 
@@ -57,6 +61,85 @@ const MessageInput = () => {
     ? activeConversation.participants.find(p => p._id !== user._id)
     : null;
   const isBlockedByMe = recipient && user?.blockedUsers?.includes(recipient._id);
+
+  const handleOpenSchedule = () => {
+    const d = new Date(Date.now() + 60 * 60 * 1000);
+    d.setSeconds(0, 0);
+    const pad = (n) => String(n).padStart(2, "0");
+    const formatted = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    setScheduleDateTime(formatted);
+    setShowSchedule((prev) => !prev);
+    setShowEmoji(false);
+    setShowAttach(false);
+  };
+
+  const setPresetSchedule = (minutes, isTomorrow9AM = false) => {
+    let d = new Date();
+    if (isTomorrow9AM) {
+      d.setDate(d.getDate() + 1);
+      d.setHours(9, 0, 0, 0);
+    } else {
+      d = new Date(Date.now() + minutes * 60 * 1000);
+      d.setSeconds(0, 0);
+    }
+    const pad = (n) => String(n).padStart(2, "0");
+    const formatted = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    setScheduleDateTime(formatted);
+  };
+
+  const handleScheduleSubmit = async () => {
+    if (!text.trim() && !preview) {
+      toast.error("Please enter a message or attach a file to schedule");
+      return;
+    }
+    if (!activeConversation) return;
+    if (!scheduleDateTime) {
+      toast.error("Please select a date and time");
+      return;
+    }
+
+    const scheduledDate = new Date(scheduleDateTime);
+    if (scheduledDate <= new Date()) {
+      toast.error("Scheduled time must be in the future");
+      return;
+    }
+
+    setIsScheduling(true);
+    try {
+      if (preview) {
+        setIsUploading(true);
+        const result = await uploadFile(preview.data);
+        if (result) {
+          await createScheduledMessage({
+            conversationId: activeConversation._id,
+            content: result.url,
+            type: preview.type,
+            fileName: preview.name,
+            fileSize: preview.size,
+            scheduledAt: scheduledDate.toISOString(),
+          });
+        }
+      } else {
+        const messageText = text.trim();
+        await createScheduledMessage({
+          conversationId: activeConversation._id,
+          content: messageText,
+          type: "text",
+          scheduledAt: scheduledDate.toISOString(),
+        });
+      }
+      setText("");
+      setPreview(null);
+      setShowSchedule(false);
+      stopTyping();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to schedule message");
+    } finally {
+      setIsScheduling(false);
+      setIsUploading(false);
+    }
+  };
 
   const handleSend = async () => {
     if (!text.trim() && !preview) return;
@@ -237,6 +320,17 @@ const MessageInput = () => {
     );
   }
 
+  // Temporary group expired check
+  if (activeConversation?.type === "group" && activeConversation?.groupInfo?.isExpired) {
+    return (
+      <div className="bg-light-2 dark:bg-dark-2 border-t border-gray-200 dark:border-dark-4 p-4 text-center">
+        <p className="text-sm text-gray-500 dark:text-gray-400 font-medium flex items-center justify-center gap-2">
+          <span>⏰</span> This temporary group has expired and is now read-only.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-light-2 dark:bg-dark-2 border-t border-gray-200 dark:border-dark-4">
       {/* File preview */}
@@ -338,6 +432,20 @@ const MessageInput = () => {
           />
         </div>
 
+        {/* Schedule button */}
+        <button
+          type="button"
+          onClick={handleOpenSchedule}
+          className={`p-2.5 rounded-full transition-colors flex-shrink-0 ${
+            showSchedule
+              ? "bg-whatsapp-500/10 text-whatsapp-600 dark:text-whatsapp-400"
+              : "hover:bg-gray-200 dark:hover:bg-dark-4 text-gray-500 dark:text-gray-400"
+          }`}
+          title="Schedule message"
+        >
+          <IoTime className="w-5 h-5" />
+        </button>
+
         {/* Send or Mic button */}
         {text.trim() || preview ? (
           <button
@@ -345,6 +453,7 @@ const MessageInput = () => {
             onClick={handleSend}
             disabled={isUploading || isSendingMessage}
             className="p-3 bg-whatsapp-500 text-white rounded-full hover:bg-whatsapp-600 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-whatsapp-500/25 flex-shrink-0 disabled:opacity-50"
+            title="Send now"
           >
             {isUploading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -375,9 +484,96 @@ const MessageInput = () => {
         )}
       </div>
 
-      {/* Backdrop for emoji/attach */}
-      {(showEmoji || showAttach) && (
-        <div className="fixed inset-0 z-40" onClick={() => { setShowEmoji(false); setShowAttach(false); }} />
+      {/* Schedule Message Popover */}
+      {showSchedule && (
+        <div className="absolute bottom-20 right-4 w-80 bg-white dark:bg-dark-3 rounded-2xl shadow-2xl border border-gray-100 dark:border-dark-4 p-4 z-50 animate-slide-up">
+          <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-dark-4 mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-whatsapp-500/10 flex items-center justify-center text-whatsapp-600 dark:text-whatsapp-400">
+                <IoTime className="w-4 h-4" />
+              </div>
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Schedule Message</h4>
+            </div>
+            <button
+              onClick={() => setShowSchedule(false)}
+              className="p-1 hover:bg-gray-100 dark:hover:bg-dark-4 rounded-full text-gray-400"
+            >
+              <IoClose className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Quick presets */}
+          <p className="text-[11px] font-semibold text-gray-400 mb-1.5 uppercase tracking-wider">Quick Presets</p>
+          <div className="grid grid-cols-2 gap-1.5 mb-3">
+            <button
+              type="button"
+              onClick={() => setPresetSchedule(30)}
+              className="px-2.5 py-1.5 text-xs rounded-lg bg-gray-50 dark:bg-dark-4 hover:bg-whatsapp-500/10 hover:text-whatsapp-600 dark:hover:text-whatsapp-400 text-gray-700 dark:text-gray-300 font-medium transition-colors text-left"
+            >
+              ⏱️ In 30 mins
+            </button>
+            <button
+              type="button"
+              onClick={() => setPresetSchedule(60)}
+              className="px-2.5 py-1.5 text-xs rounded-lg bg-gray-50 dark:bg-dark-4 hover:bg-whatsapp-500/10 hover:text-whatsapp-600 dark:hover:text-whatsapp-400 text-gray-700 dark:text-gray-300 font-medium transition-colors text-left"
+            >
+              ⏱️ In 1 hour
+            </button>
+            <button
+              type="button"
+              onClick={() => setPresetSchedule(180)}
+              className="px-2.5 py-1.5 text-xs rounded-lg bg-gray-50 dark:bg-dark-4 hover:bg-whatsapp-500/10 hover:text-whatsapp-600 dark:hover:text-whatsapp-400 text-gray-700 dark:text-gray-300 font-medium transition-colors text-left"
+            >
+              ⏱️ In 3 hours
+            </button>
+            <button
+              type="button"
+              onClick={() => setPresetSchedule(0, true)}
+              className="px-2.5 py-1.5 text-xs rounded-lg bg-gray-50 dark:bg-dark-4 hover:bg-whatsapp-500/10 hover:text-whatsapp-600 dark:hover:text-whatsapp-400 text-gray-700 dark:text-gray-300 font-medium transition-colors text-left"
+            >
+              ☀️ Tomorrow 9 AM
+            </button>
+          </div>
+
+          {/* Date Time Input */}
+          <label className="text-[11px] font-semibold text-gray-400 block mb-1.5 uppercase tracking-wider">
+            Custom Date & Time
+          </label>
+          <input
+            type="datetime-local"
+            value={scheduleDateTime}
+            onChange={(e) => setScheduleDateTime(e.target.value)}
+            className="w-full px-3 py-2 bg-gray-50 dark:bg-dark-4 border border-gray-200 dark:border-dark-4 rounded-xl text-xs text-gray-900 dark:text-white mb-3 focus:outline-none focus:ring-1 focus:ring-whatsapp-500"
+          />
+
+          <button
+            type="button"
+            onClick={handleScheduleSubmit}
+            disabled={isScheduling || isUploading || (!text.trim() && !preview)}
+            className="w-full py-2 bg-whatsapp-500 text-white rounded-xl text-xs font-semibold hover:bg-whatsapp-600 disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shadow-md shadow-whatsapp-500/20"
+          >
+            {isScheduling || isUploading ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <>
+                <IoTime className="w-4 h-4" />
+                <span>Confirm & Schedule</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Backdrop for emoji/attach/schedule */}
+      {(showEmoji || showAttach || showSchedule) && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => {
+            setShowEmoji(false);
+            setShowAttach(false);
+            setShowSchedule(false);
+          }}
+        />
       )}
     </div>
   );

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { IoClose, IoSearch, IoPersonAdd } from "react-icons/io5";
+import { IoClose, IoSearch, IoPersonAdd, IoHourglassOutline } from "react-icons/io5";
 import Modal from "../common/Modal";
 import Avatar from "../common/Avatar";
 import useChatStore from "../../store/useChatStore";
@@ -98,6 +98,24 @@ const GroupInfo = ({ conversation, isOpen, onClose }) => {
           <p className="text-sm text-gray-500 dark:text-gray-400">Group · {participants?.length} participants</p>
           {groupInfo?.description && (
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 max-w-xs">{groupInfo.description}</p>
+          )}
+
+          {groupInfo?.expiresAt && (
+            <div className="w-full mt-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 text-left flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
+                <IoHourglassOutline className="w-5 h-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">
+                  {groupInfo.isExpired ? "Temporary Group (Expired)" : "Temporary Group"}
+                </p>
+                <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80">
+                  {groupInfo.isExpired
+                    ? "This group has reached its duration limit and is read-only."
+                    : `Expires on ${new Date(groupInfo.expiresAt).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}`}
+                </p>
+              </div>
+            </div>
           )}
         </div>
 

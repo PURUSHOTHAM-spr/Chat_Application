@@ -20,11 +20,11 @@ const EmptyChat = () => {
       </div>
 
       <h2 className="text-2xl font-light text-gray-700 dark:text-gray-300 mb-3">
-        WhatsApp Web
+        Chat Sphere
       </h2>
       <p className="text-sm text-gray-400 dark:text-gray-500 max-w-md leading-relaxed">
-        Send and receive messages without keeping your phone online.
-        Use WhatsApp on up to 4 linked devices and 1 phone at the same time.
+        Send and receive messages in real time.
+        Connect with friends, groups, and teams — all from your browser.
       </p>
 
       <div className="flex items-center gap-2 mt-8 text-xs text-gray-400 dark:text-gray-600">

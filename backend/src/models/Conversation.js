@@ -19,6 +19,9 @@ const conversationSchema = new mongoose.Schema(
       description: { type: String, default: "" },
       avatar: { type: String, default: "" },
       admin: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+      // Temporary group fields
+      expiresAt: { type: Date, default: null }, // null = permanent group
+      isExpired: { type: Boolean, default: false },
     },
     // Subset pattern — embedded last message for fast sidebar rendering
     lastMessage: {
