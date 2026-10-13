@@ -4,7 +4,7 @@ MINI PROJECT – 0th REVIEW REPORT
 (B.Tech – Information Technology)
 
 Chat Sphere: A Full-Stack Real-Time Messaging Web Application with
-WebSocket Communication and Group Collaboration
+WebSocket Communication, Group Collaboration, and Expense Splitting
 
 Submitted by
 Purushotham Reddy – [Roll Number]
@@ -21,14 +21,16 @@ ANURAG UNIVERSITY
 ================================================================================
 
 Chat Sphere: A Full-Stack Real-Time Messaging Web Application with WebSocket
-Communication and Group Collaboration
+Communication, Group Collaboration, and Expense Splitting
 
 Chat Sphere is a full-stack real-time messaging web application built on the MERN-style
 stack (React, Express, Node.js, and MongoDB) that delivers a comprehensive communication
 platform, enabling users to exchange instant text messages, share images and files via
-Cloudinary, create and manage group conversations, and track online presence and message
-delivery status — all from a single responsive, mobile-first web dashboard powered by
-Socket.IO for bidirectional real-time communication.
+Cloudinary, create and manage group conversations, track online presence and message
+delivery status, split expenses within groups, and schedule messages for future delivery —
+all from a single responsive, mobile-first web dashboard powered by Socket.IO for
+bidirectional real-time communication. A background scheduler service runs server-side
+every 30 seconds to dispatch due messages and expire temporary groups automatically.
 
 Department of Information Technology, Anurag University | Page 2
 
@@ -61,16 +63,25 @@ solving several complex engineering challenges. Specifically:
    size limits, storing media in cloud storage, and rendering previews across device
    types adds significant complexity.
 
+•  Expense Management in Groups: Group participants frequently need to split shared
+   costs (dinners, trips, bills) fairly. Tracking who paid, who owes what, supporting
+   multiple split strategies (equal, custom amount, percentage), and keeping settlement
+   history linked to the relevant group conversation is a non-trivial engineering
+   problem that most messaging applications do not address natively.
 
+•  Delayed and Scheduled Communication: Users often need to compose messages in
+   advance and deliver them at a specific future time. Building a reliable server-side
+   scheduler that survives restarts, handles failures gracefully, and emits real-time
+   socket events upon dispatch requires careful background service design.
 
 •  Security Concerns: User credentials must be securely hashed, authentication tokens
    must be tamper-proof, API endpoints must be rate-limited to prevent abuse, and
    messages should have basic encryption at rest.
 
-Chat Sphere resolves these issues by unifying text messaging, media
-sharing, group collaboration, and presence tracking under a single
-secure, cloud-deployed web application with Socket.IO-powered real-time communication
-and JWT-based authentication.
+Chat Sphere resolves these issues by unifying text messaging, media sharing, group
+collaboration, presence tracking, expense splitting, and scheduled message delivery
+under a single secure, cloud-deployed web application with Socket.IO-powered real-time
+communication and JWT-based authentication.
 
 Department of Information Technology, Anurag University | Page 3
 
@@ -110,20 +121,32 @@ The project is guided by the following specific objectives:
    message was deleted"), in-chat message search with match navigation, chat
    clearing, and conversation deletion.
 
+8. To build a group expense splitting system that allows group members to log shared
+   costs, choose a split strategy (equal, custom amount, or percentage), designate
+   who paid, track individual settlement status, and view net balance summaries —
+   with real-time updates broadcast via Socket.IO to all group members.
 
+9. To implement a server-side scheduled message system allowing users to compose
+   messages in advance and deliver them at a specified future date and time. A
+   background polling service (30-second interval) dispatches due messages, emits
+   Socket.IO events to recipients, and handles cancellation and group expiry.
 
-9. To create a notifications panel that aggregates incoming message notifications with
-   sender information, timestamps, read/unread status, and direct navigation to the
-   relevant conversation.
+10. To support temporary groups with configurable expiration dates, after which the
+    group becomes read-only. The scheduler automatically marks expired groups, emits
+    a group:expired socket event to all participants, and inserts a system message.
 
-10. To implement a profile management system allowing users to update their display
+11. To create a notifications panel that aggregates incoming message notifications with
+    sender information, timestamps, read/unread status, and direct navigation to the
+    relevant conversation.
+
+12. To implement a profile management system allowing users to update their display
     name, about status, and avatar (uploaded to Cloudinary), with changes reflected
     in real-time across all conversations.
 
-11. To support dark/light theme toggling with persistence across sessions using
+13. To support dark/light theme toggling with persistence across sessions using
     Zustand state management and CSS custom properties.
 
-12. To deploy the application to cloud platforms — frontend on Vercel, backend on
+14. To deploy the application to cloud platforms — frontend on Vercel, backend on
     Render, and database on MongoDB Atlas — ensuring zero-downtime production
     availability.
 
@@ -250,9 +273,13 @@ Application Layer   | Node.js + Express.js REST API, Socket.IO v4 (bidirectional
                     | express-rate-limit, express-validator, cookie-parser
 --------------------+--------------------------------------------------------------------
 Data Layer          | MongoDB Atlas (Cloud NoSQL), Mongoose ODM schemas
-                    | (User, Conversation, Message), compound indexes for efficient queries
+                    | (User, Conversation, Message, Expense, ScheduledMessage),
+                    | compound indexes for efficient queries
 --------------------+--------------------------------------------------------------------
 External Services   | Cloudinary CDN for image, file, and voice message uploads
+--------------------+--------------------------------------------------------------------
+Background Services | Node.js setInterval scheduler (30-second polling) for dispatching
+                    | scheduled messages and expiring temporary groups
 --------------------+--------------------------------------------------------------------
 Deployment Layer    | Frontend → Vercel (SPA with rewrite rules);
                     | Backend → Render (Node.js service);
@@ -285,7 +312,25 @@ Media Sharing           | Image and document upload via Cloudinary (10MB limit).
                         | recording using MediaRecorder API (audio/webm). Clipboard paste
                         | support for images. File preview before sending.
 ------------------------+---------------------------------------------------------------------
-
+Expense Splitting       | Group-only feature to log shared expenses. Supports Equal, Custom
+                        | Amount, and Percentage split strategies. Designated payer tracked.
+                        | Per-member settlement (Mark Paid). Net balance summary shows total
+                        | owed and total owing with per-person breakdown. Real-time updates
+                        | via expense:new and expense:settled Socket.IO events. System message
+                        | auto-posted to group chat on expense creation.
+------------------------+---------------------------------------------------------------------
+Scheduled Messages      | Users compose messages with a future date/time via a datetime picker
+                        | in the message input. Messages stored with status=pending. Server-side
+                        | background scheduler (30s polling) finds due messages, creates real
+                        | Message documents, emits socket events, and marks them as sent.
+                        | ScheduledMessagesPanel lists all pending scheduled messages with
+                        | time-until-send display and Cancel option.
+------------------------+---------------------------------------------------------------------
+Temporary Groups        | Groups can be created with an optional expiry date (expiresAt). The
+                        | scheduler marks expired groups as read-only (isExpired=true), emits
+                        | group:expired to all participants, and inserts a system message.
+                        | All expense creation and scheduled message dispatch for expired groups
+                        | is blocked server-side.
 ------------------------+---------------------------------------------------------------------
 Presence & Typing       | Real-time online/offline status via Socket.IO presence events.
                         | "Last seen" timestamps. Typing indicators with automatic timeout.
@@ -327,43 +372,61 @@ literature survey gaps identified in Section 5.
 
 7.2 System Design
 
-A layered architecture (Section 6) was designed first, followed by the API contract — four
+A layered architecture (Section 6) was designed first, followed by the API contract — six
 route groups, each exposing REST endpoints under distinct base paths (/auth, /users,
-/conversations, /messages) — and the Socket.IO event contract (message:send,
-message:new, message:read, typing:start, typing:stop, user:online, user:offline).
+/conversations, /messages, /expenses, /scheduled-messages) — and the Socket.IO event
+contract (message:send, message:new, message:read, typing:start, typing:stop,
+user:online, user:offline, expense:new, expense:settled, group:expired).
 The React component hierarchy (App → ChatDashboard → Sidebar + ChatWindow, with modal
-overlays for ProfileSettings, GroupInfo, CreateGroupModal, NotificationsPanel) was then
-mapped out.
+overlays for ProfileSettings, GroupInfo, CreateGroupModal, NotificationsPanel,
+ExpensePanel, ExpenseSplitModal, and ScheduledMessagesPanel) was then mapped out.
 
 7.3 Database Design
 
-Three Mongoose collections were designed, each timestamped and indexed for query
+Five Mongoose collections were designed, each timestamped and indexed for query
 performance, summarised in Table 7.1.
 
 Table 7.1: Database Schema Overview
 
-Collection    | Key Fields                                         | Purpose
---------------+----------------------------------------------------+-------------------------------------
-User          | fullName, email, password (select: false),         | Stores account credentials, profile
-              | avatar, about, lastSeen, isOnline,                 | data, online status, and block list.
-              | blockedUsers [ref: User]                           | Password hashed with bcrypt (12
-              |                                                    | rounds) via pre-save middleware.
---------------+----------------------------------------------------+-------------------------------------
-Conversation  | type (direct/group), participants [ref: User],     | Links participants, stores embedded
-              | groupInfo { name, description, avatar,             | lastMessage (subset pattern for fast
-              | admin [ref: User] }, lastMessage { content,        | sidebar rendering), per-user unread
-              | sender, type, createdAt }, unreadCount (Map),      | counts, per-user cleared/deleted
-              | wallpaper, clearedAt (Map), deletedAt (Map)        | timestamps. Indexed on participants
-              |                                                    | and updatedAt.
---------------+----------------------------------------------------+-------------------------------------
-Message       | conversationId [ref: Conversation], sender         | Logs individual messages with delivery
-              | [ref: User], content, type (text/image/file/       | status tracking (sending → sent →
-              | voice/system), fileName, fileSize, status          | delivered → read), per-user read
-              | (sending/sent/delivered/read), readBy              | receipts with timestamps, emoji
-              | [{ userId, readAt }], reactions [{ userId,         | reactions, per-user soft deletion,
-              | emoji }], deletedFor [ref: User], isDeleted,       | and global deletion. Compound index
-              | deletedAt                                          | on (conversationId, createdAt) for
-              |                                                    | efficient paginated retrieval.
+Collection       | Key Fields                                         | Purpose
+-----------------+----------------------------------------------------+-------------------------------------
+User             | fullName, email, password (select: false),         | Stores account credentials, profile
+                 | avatar, about, lastSeen, isOnline,                 | data, online status, and block list.
+                 | blockedUsers [ref: User]                           | Password hashed with bcrypt (12
+                 |                                                    | rounds) via pre-save middleware.
+-----------------+----------------------------------------------------+-------------------------------------
+Conversation     | type (direct/group), participants [ref: User],     | Links participants, stores embedded
+                 | groupInfo { name, description, avatar,             | lastMessage (subset pattern for fast
+                 | admin [ref: User], expiresAt, isExpired },         | sidebar rendering), per-user unread
+                 | lastMessage { content, sender, type, createdAt },  | counts, per-user cleared/deleted
+                 | unreadCount (Map), wallpaper,                      | timestamps. groupInfo.expiresAt and
+                 | clearedAt (Map), deletedAt (Map)                   | isExpired support temporary groups.
+-----------------+----------------------------------------------------+-------------------------------------
+Message          | conversationId [ref: Conversation], sender         | Logs individual messages with delivery
+                 | [ref: User], content, type (text/image/file/       | status tracking (sending → sent →
+                 | voice/system), fileName, fileSize, status          | delivered → read), per-user read
+                 | (sending/sent/delivered/read), readBy              | receipts with timestamps, emoji
+                 | [{ userId, readAt }], reactions [{ userId,         | reactions, per-user soft deletion,
+                 | emoji }], deletedFor [ref: User], isDeleted,       | and global deletion. Compound index
+                 | deletedAt                                          | on (conversationId, createdAt) for
+                 |                                                    | efficient paginated retrieval.
+-----------------+----------------------------------------------------+-------------------------------------
+Expense          | conversationId [ref: Conversation],                | Records shared group expenses.
+                 | createdBy [ref: User], description,                | splitType determines how amount is
+                 | totalAmount, currency (INR/USD/EUR/GBP),            | divided. splits[] tracks per-member
+                 | splitType (equal/custom/percentage),               | amount and isPaid/paidAt settlement
+                 | paidBy [ref: User],                                | status. status transitions from
+                 | splits [{ userId, amount, isPaid, paidAt }],        | "active" to "settled" once all
+                 | status (active/settled)                            | splits are paid. Compound index on
+                 |                                                    | (conversationId, createdAt).
+-----------------+----------------------------------------------------+-------------------------------------
+Scheduled        | userId [ref: User],                                | Stores user-composed messages to be
+Message          | conversationId [ref: Conversation],                | dispatched in the future. The
+                 | content, type (text/image/file/voice),             | scheduler polls on status=pending
+                 | fileName, fileSize, scheduledAt,                   | and scheduledAt <= now. On dispatch,
+                 | status (pending/sent/cancelled),                   | creates a real Message document and
+                 | sentMessageId [ref: Message]                       | updates status to "sent". Compound
+                 |                                                    | index on (status, scheduledAt).
 
 7.4 Backend Development
 
@@ -378,18 +441,38 @@ The Express backend was implemented module-by-module:
 
 •  Conversation Routes (/api/conversations): Fetch all user conversations with
    populated participants and last message, create direct conversations (with duplicate
-   prevention), create group conversations, update group info, add/remove group
-   members.
+   prevention), create group conversations (with optional expiresAt for temporary
+   groups), update group info, add/remove group members.
 
 •  Message Routes (/api/messages): Fetch paginated messages per conversation,
    send messages (with Cloudinary upload for media types), mark messages as read,
    delete messages (soft delete), upload files.
 
-•  Socket Event Handlers: Four event modules — chatEvents (message sending,
+•  Expense Routes (/api/expenses): Create expense (POST /), fetch group expenses
+   (GET /:conversationId), settle a user's split (PUT /:id/settle), and fetch net
+   balance summary (GET /:conversationId/summary). Expense creation validates group
+   membership, calculates splits per chosen strategy, auto-posts a system message
+   to the group chat, and broadcasts expense:new via Socket.IO.
+
+•  Scheduled Message Routes (/api/scheduled-messages): Create a scheduled
+   message with a future scheduledAt datetime (POST /), list the user's pending
+   scheduled messages (GET /), update content/time (PUT /:id), and cancel (DELETE
+   /:id). Validation rejects past scheduledAt values.
+
+•  Background Scheduler Service (schedulerService.js): A setInterval-based
+   polling service started once at server boot. Runs every 30 seconds to:
+   (1) Find ScheduledMessage documents with status=pending and scheduledAt ≤ now,
+   create real Message documents, emit socket events to all participants, and
+   mark scheduled messages as sent.
+   (2) Find Conversation documents where groupInfo.expiresAt ≤ now and
+   isExpired=false, mark them expired, insert a system message, and emit
+   group:expired to all participants.
+
+•  Socket Event Handlers: Three event modules — chatEvents (message sending,
    delivery acknowledgment, read receipts, message deletion), typingEvents (start/
    stop typing broadcasts), presenceEvents (online/offline status with lastSeen
-   update), and socketHandler (connection lifecycle, room joining, and session-based
-   forced logout).
+   update) — orchestrated by socketHandler (connection lifecycle, room joining,
+   and session-based forced logout).
 
 •  Middleware: JWT authentication (protectRoute), centralized error handler, rate
    limiter (on auth and upload routes), and request validation.
@@ -427,6 +510,17 @@ The React frontend was built component-by-component with six major component gro
 
 
 
+•  Expense Components: ExpensePanel (slide-in drawer from the right showing all
+   group expenses, a balance summary card with total owed/owing per person, and
+   an expandable split breakdown per expense with Mark Paid button),
+   ExpenseSplitModal (modal for creating a new expense — description, amount,
+   currency selector, paid-by dropdown, split method selector with Equal/Custom/
+   Percentage tabs, per-participant amount inputs, and real-time validation).
+
+•  Scheduled Message Components: ScheduledMessagesPanel (slide-in panel from
+   the left listing all pending scheduled messages with human-readable time-until-
+   send display and per-message Cancel button).
+
 •  Common Components: Avatar (with online indicator and fallback initials), Badge
    (unread count), Modal (reusable modal wrapper with backdrop), ThemeToggle
    (dark/light switch), LoadingSkeleton (shimmer loading placeholders).
@@ -434,8 +528,10 @@ The React frontend was built component-by-component with six major component gro
 •  State Management (Zustand Stores): useAuthStore (user state, login, register,
    logout, token management, block user), useChatStore (conversations, messages,
    active conversation, online users, typing users, send/receive message, CRUD
-   operations), useThemeStore (dark/light mode with persistence), useNotificationStore
-   (notification list, unread count, panel toggle).
+   operations, scheduled messages), useThemeStore (dark/light mode with
+   persistence), useNotificationStore (notification list, unread count, panel toggle),
+   useExpenseStore (expenses list, expense summary, create/settle/fetch expenses,
+   real-time expense socket handlers, panel/modal visibility state).
 
 •  Custom Hooks: useSocket (Socket.IO connection and event listener setup),
    useTyping (debounced typing start/stop emission), useInfiniteScroll (load older
@@ -553,12 +649,14 @@ stacked sections:
 
 •  Message Input: A bottom bar containing an emoji button (opens a full emoji picker
    popup), an attachment button (opens a menu with Photo and Document options), a
-   multi-line text input area (auto-resizing up to 128px), and a Send button (appears
-   when text is entered) or Microphone button (appears when text is empty, triggers
-   voice recording). During voice recording, a red pill-shaped indicator shows elapsed
-   time with a stop button. File previews appear above the input bar before sending.
-   If the contact is blocked, the input is replaced with a "You blocked this contact"
-   message and an unblock button.
+   multi-line text input area (auto-resizing up to 128px), a Clock button to schedule
+   the message for a future date and time (opens a native datetime picker; scheduled
+   messages are posted to the server with the chosen scheduledAt), and a Send button
+   (appears when text is entered) or Microphone button (appears when text is empty,
+   triggers voice recording). During voice recording, a red pill-shaped indicator shows
+   elapsed time with a stop button. File previews appear above the input bar before
+   sending. If the contact is blocked, the input is replaced with a "You blocked this
+   contact" message and an unblock button.
 
 8.6 In-Chat Message Search
 
@@ -571,12 +669,14 @@ message. Pressing Escape or the close button dismisses the search.
 8.7 Group Info Modal
 
 Opened by clicking the header of a group conversation. Displays the group's avatar, name,
-description, and participant count at the top. Below, a scrollable participant list shows
-each member's avatar, name, online status, and about text. The group admin is tagged with
+description, and participant count at the top. If the group has an expiry date set, a
+countdown or expiry timestamp is shown. Below, a scrollable participant list shows each
+member's avatar, name, online status, and about text. The group admin is tagged with
 an "Admin" badge. If the current user is the admin, an "Add Participant" button appears,
 expanding a search section to find and add new members with a chip-based selection UI.
-The admin can also remove individual members. At the bottom, a "Leave Group" button
-allows any member to exit the group.
+The admin can also remove individual members. If the group is expired (read-only), member
+management controls are hidden. At the bottom, a "Leave Group" button allows any
+non-expired group member to exit the group.
 
 8.8 Create Group Modal
 
@@ -605,7 +705,36 @@ A full-height slide-in panel from the left (with backdrop overlay) containing:
 •  A read-only Email display.
 •  A "Save Changes" button with gradient styling and loading state.
 
-8.10 Notifications Panel
+8.10 Expense Panel
+
+A full-height slide-in panel from the right (only available in group conversations). The
+header displays the group name and an "Add" button to open the ExpenseSplitModal. The
+top section shows a balance summary card with "You are owed" (green) and "You owe" (red)
+totals, plus a per-person settlement detail list. Below, an expense history list shows each
+expense card with description, who paid, date, total amount, and a settled/unpaid badge
+(e.g. "2/4 Paid"). Clicking a card expands a per-member splits breakdown showing each
+person's share and paid/unpaid status. If the current user has an unsettled split, a
+"Mark Paid" button appears inline.
+
+8.11 Expense Split Modal
+
+A modal dialog opened from the Expense Panel or Chat Header menu. The form contains:
+a description input, amount and currency selector, a "Paid By" dropdown (any group
+member), a split method selector (Equally / Exact Amounts / By Percentage), and a
+scrollable participant list. For "Equally", each selected member shows their per-person
+amount in real time. For "Exact Amounts" or "By Percentage", each row has an editable
+input with live validation showing the current total vs. required total. A disabled submit
+button prevents invalid submissions.
+
+8.12 Scheduled Messages Panel
+
+A full-height slide-in panel from the left listing all pending scheduled messages across all
+conversations. Each card shows the target conversation name, message preview (or file
+type icon), and a human-readable countdown ("In 2h 15m — 3:30 PM" or date for future
+days). A "Cancel" button marks the scheduled message as cancelled. When empty, a
+placeholder with instructions is shown.
+
+8.13 Notifications Panel
 
 A full-height slide-in panel from the right showing a chronological list of notifications.
 Each notification card displays the sender's avatar, notification title (sender name or
@@ -614,7 +743,7 @@ notifications have a subtle tinted background. Clicking a notification navigates
 relevant conversation and closes the panel. A "Clear all" button removes all notifications.
 When empty, a placeholder graphic with "You're all caught up!" message is shown.
 
-8.11 Theme Toggle
+8.14 Theme Toggle
 
 A toggle button in the Sidebar header switches between light and dark mode. The theme
 preference is persisted via Zustand store and restored on app reload. In dark mode, the
@@ -713,17 +842,19 @@ to integration, testing, and deployment.
 
 Table 10.1: Four-Month Project Timeline
 
-Project Phase                        | Month 1 | Month 2 | Month 3 | Month 4
--------------------------------------+---------+---------+---------+--------
-Requirement Analysis & Survey        |    ✓    |         |         |
-System Design & Database Schema      |    ✓    |         |         |
-Backend REST API Development         |         |    ✓    |    ✓    |
-Socket.IO Event Handlers             |         |    ✓    |    ✓    |
-Frontend Page & Component Building   |         |    ✓    |    ✓    |
-
-Integration & Local Testing          |         |         |    ✓    |    ✓
-Cloud Deployment & Verification      |         |         |         |    ✓
-Documentation & Reporting            |         |         |         |    ✓
+Project Phase                             | Month 1 | Month 2 | Month 3 | Month 4
+------------------------------------------+---------+---------+---------+--------
+Requirement Analysis & Survey             |    ✓    |         |         |
+System Design & Database Schema           |    ✓    |         |         |
+Backend REST API Development              |         |    ✓    |    ✓    |
+Socket.IO Event Handlers                  |         |    ✓    |    ✓    |
+Frontend Page & Component Building        |         |    ✓    |    ✓    |
+Expense Splitting Module                  |         |         |    ✓    |    ✓
+Scheduled Messages & Background Scheduler |         |         |    ✓    |    ✓
+Temporary Groups Feature                  |         |         |    ✓    |    ✓
+Integration & Local Testing               |         |         |    ✓    |    ✓
+Cloud Deployment & Verification           |         |         |         |    ✓
+Documentation & Reporting                 |         |         |         |    ✓
 
 Department of Information Technology, Anurag University | Page 11
 
