@@ -9,13 +9,13 @@ const EmptyChat = () => {
       <div className="w-72 h-72 mb-6 relative">
         {/* Decorative circles */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-40 h-40 bg-whatsapp-500/5 rounded-full animate-pulse" />
+          <div className="w-40 h-40 bg-chatsphere-500/5 rounded-full animate-pulse" />
         </div>
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-28 h-28 bg-whatsapp-500/10 rounded-full" />
+          <div className="w-28 h-28 bg-chatsphere-500/10 rounded-full" />
         </div>
         <div className="absolute inset-0 flex items-center justify-center">
-          <IoChatbubbles className="w-16 h-16 text-whatsapp-500/60" />
+          <IoChatbubbles className="w-16 h-16 text-chatsphere-500/60" />
         </div>
       </div>
 

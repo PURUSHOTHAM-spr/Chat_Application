@@ -87,12 +87,17 @@ const chatEvents = (socket) => {
   socket.on("message:delivered", async (data) => {
     try {
       const { messageId } = data;
+      const existingMessage = await Message.findById(messageId).select("conversationId");
+      const isParticipant = existingMessage && await Conversation.exists({
+        _id: existingMessage.conversationId,
+        participants: socket.userId,
+      });
+      if (!isParticipant) return;
       const message = await Message.findByIdAndUpdate(
         messageId,
         { status: "delivered" },
         { new: true }
       );
-
       if (message) {
         io.to(message.sender.toString()).emit("message:status", {
           messageId,
@@ -108,6 +113,11 @@ const chatEvents = (socket) => {
   socket.on("message:read", async (data) => {
     try {
       const { conversationId } = data;
+      const isParticipant = await Conversation.exists({
+        _id: conversationId,
+        participants: socket.userId,
+      });
+      if (!isParticipant) return;
 
       // Mark all unread messages as read
       await Message.updateMany(

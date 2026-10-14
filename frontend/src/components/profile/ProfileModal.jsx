@@ -30,7 +30,7 @@ const ProfileModal = ({ user, isOpen, onClose }) => {
           </div>
           <div>
             <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">Status</p>
-            <p className={`text-sm font-medium ${isOnline ? "text-whatsapp-500" : "text-gray-500"}`}>
+            <p className={`text-sm font-medium ${isOnline ? "text-chatsphere-500" : "text-gray-500"}`}>
               {isOnline ? "Online" : `Last seen ${formatLastSeen(user.lastSeen)}`}
             </p>
           </div>

@@ -44,7 +44,7 @@ const ChatListItem = ({ conversation, isActive, onClick }) => {
       onClick={onClick}
       className={`w-full flex items-center gap-3 px-4 py-3 transition-all duration-150 hover:bg-light-2 dark:hover:bg-dark-3 ${
         isActive
-          ? "bg-light-3 dark:bg-dark-3 border-l-4 border-whatsapp-500"
+          ? "bg-light-3 dark:bg-dark-3 border-l-4 border-chatsphere-500"
           : "border-l-4 border-transparent"
       }`}
     >
@@ -61,7 +61,7 @@ const ChatListItem = ({ conversation, isActive, onClick }) => {
             <h3
               className={`text-sm font-semibold truncate ${
                 isActive
-                  ? "text-whatsapp-700 dark:text-whatsapp-400"
+                  ? "text-chatsphere-700 dark:text-chatsphere-400"
                   : "text-gray-900 dark:text-white"
               }`}
             >
@@ -81,7 +81,7 @@ const ChatListItem = ({ conversation, isActive, onClick }) => {
           <span
             className={`text-xs flex-shrink-0 ml-2 ${
               unreadCount > 0
-                ? "text-whatsapp-500 font-semibold"
+                ? "text-chatsphere-500 font-semibold"
                 : "text-gray-400 dark:text-gray-500"
             }`}
           >
@@ -93,7 +93,7 @@ const ChatListItem = ({ conversation, isActive, onClick }) => {
           <p
             className={`text-xs truncate flex items-center gap-1 ${
               isTyping
-                ? "text-whatsapp-500 font-medium italic"
+                ? "text-chatsphere-500 font-medium italic"
                 : unreadCount > 0
                 ? "text-gray-600 dark:text-gray-300 font-medium"
                 : "text-gray-400 dark:text-gray-500"

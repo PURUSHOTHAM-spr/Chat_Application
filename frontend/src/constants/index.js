@@ -40,6 +40,13 @@ export const SOCKET_EVENTS = {
   // Expenses
   EXPENSE_NEW: "expense:new",
   EXPENSE_SETTLED: "expense:settled",
+
+  // Tasks
+  TASK_CREATED: "task:created",
+  TASK_UPDATED: "task:updated",
+  TASK_COMPLETED: "task:completed",
+  TASK_DELETED: "task:deleted",
+  TASK_REMINDER: "task:reminder",
 };
 
 // Message types
@@ -60,7 +67,7 @@ export const MESSAGE_STATUS = {
 };
 
 // Default avatar placeholder
-export const DEFAULT_AVATAR = "https://ui-avatars.com/api/?background=128C7E&color=fff&bold=true&name=";
+export const DEFAULT_AVATAR = "https://ui-avatars.com/api/?background=526F99&color=fff&bold=true&name=";
 
 // Chat wallpaper options
 export const WALLPAPERS = [
@@ -71,5 +78,3 @@ export const WALLPAPERS = [
   "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80",
   "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800&q=80",
 ];
-
-

@@ -1,11 +1,11 @@
 {
-  "name": "WhatsApp Clone",
-  "short_name": "WhatsApp",
+  "name": "ChatSphere",
+  "short_name": "ChatSphere",
   "description": "Real-time messaging application",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#111B21",
-  "theme_color": "#128C7E",
+  "background_color": "#171B22",
+  "theme_color": "#526F99",
   "icons": [
     {
       "src": "/icons/icon-192.png",

@@ -54,7 +54,7 @@ const SearchUsers = ({ query, onClose }) => {
     <div className="p-2">
       {isLoading && (
         <div className="flex items-center justify-center py-8">
-          <div className="w-6 h-6 border-2 border-whatsapp-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-chatsphere-500 border-t-transparent rounded-full animate-spin" />
         </div>
       )}
 

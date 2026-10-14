@@ -30,7 +30,7 @@ const NotificationsPanel = () => {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-dark-4">
           <div className="flex items-center gap-2">
-            <IoNotifications className="w-5 h-5 text-whatsapp-500" />
+            <IoNotifications className="w-5 h-5 text-chatsphere-500" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Notifications</h2>
           </div>
           <div className="flex items-center gap-2">
@@ -60,7 +60,7 @@ const NotificationsPanel = () => {
                   key={notif.id}
                   onClick={() => handleNotificationClick(notif)}
                   className={`w-full flex items-start gap-3 p-4 text-left hover:bg-gray-50 dark:hover:bg-dark-3 transition-colors ${
-                    !notif.read ? "bg-whatsapp-50/50 dark:bg-whatsapp-500/5" : ""
+                    !notif.read ? "bg-chatsphere-50/50 dark:bg-chatsphere-500/5" : ""
                   }`}
                 >
                   <Avatar src={notif.sender?.avatar} name={notif.title} size="sm" />
@@ -72,7 +72,7 @@ const NotificationsPanel = () => {
                     </p>
                   </div>
                   {!notif.read && (
-                    <div className="w-2.5 h-2.5 bg-whatsapp-500 rounded-full flex-shrink-0 mt-1.5" />
+                    <div className="w-2.5 h-2.5 bg-chatsphere-500 rounded-full flex-shrink-0 mt-1.5" />
                   )}
                 </button>
               ))}

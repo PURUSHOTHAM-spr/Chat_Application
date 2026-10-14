@@ -251,7 +251,7 @@ const ExpenseSplitModal = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
                 onClick={() => setSplitType(method.type)}
                 className={`py-2 px-3 rounded-xl text-xs font-medium transition-all ${
                   splitType === method.type
-                    ? "bg-whatsapp-500 text-white shadow-sm"
+                    ? "bg-chatsphere-500 text-white shadow-sm"
                     : "bg-gray-100 dark:bg-dark-3 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-dark-4"
                 }`}
               >
@@ -270,7 +270,7 @@ const ExpenseSplitModal = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
             <button
               type="button"
               onClick={selectAll}
-              className="text-xs text-whatsapp-600 dark:text-whatsapp-400 font-medium hover:underline"
+              className="text-xs text-chatsphere-600 dark:text-chatsphere-400 font-medium hover:underline"
             >
               Select All
             </button>
@@ -293,7 +293,7 @@ const ExpenseSplitModal = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => toggleUser(p._id)}
-                      className="rounded text-whatsapp-500 focus:ring-whatsapp-500 w-4 h-4"
+                      className="rounded text-chatsphere-500 focus:ring-chatsphere-500 w-4 h-4"
                     />
                     <Avatar src={p.avatar} name={p.fullName} size="xs" />
                     <span className="text-xs font-medium text-gray-900 dark:text-white truncate">
@@ -304,7 +304,7 @@ const ExpenseSplitModal = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
                   {isSelected && (
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       {splitType === "equal" && (
-                        <span className="text-xs font-semibold text-whatsapp-600 dark:text-whatsapp-400">
+                        <span className="text-xs font-semibold text-chatsphere-600 dark:text-chatsphere-400">
                           {symbol}{perPersonEqual}
                         </span>
                       )}
@@ -366,7 +366,7 @@ const ExpenseSplitModal = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
               <span
                 className={`text-xs font-medium ${
                   Math.abs(currentCustomTotal - numTotal) < 0.05
-                    ? "text-whatsapp-600"
+                    ? "text-chatsphere-600"
                     : "text-red-500"
                 }`}
               >
@@ -380,7 +380,7 @@ const ExpenseSplitModal = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
               <span
                 className={`text-xs font-medium ${
                   Math.abs(currentPercentageTotal - 100) < 0.1
-                    ? "text-whatsapp-600"
+                    ? "text-chatsphere-600"
                     : "text-red-500"
                 }`}
               >
@@ -402,7 +402,7 @@ const ExpenseSplitModal = ({ isOpen: propIsOpen, onClose: propOnClose }) => {
           <button
             type="submit"
             disabled={isCreatingExpense}
-            className="flex-1 py-2.5 bg-whatsapp-500 text-white font-semibold rounded-xl text-xs hover:bg-whatsapp-600 disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shadow-md shadow-whatsapp-500/20"
+            className="flex-1 py-2.5 bg-chatsphere-500 text-white font-semibold rounded-xl text-xs hover:bg-chatsphere-600 disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shadow-md shadow-chatsphere-500/20"
           >
             {isCreatingExpense ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

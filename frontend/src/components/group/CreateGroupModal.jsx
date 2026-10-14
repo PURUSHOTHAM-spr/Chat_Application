@@ -112,7 +112,7 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
           {selectedUsers.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-4">
               {selectedUsers.map((user) => (
-                <span key={user._id} className="flex items-center gap-1 px-3 py-1 bg-whatsapp-500/10 text-whatsapp-700 dark:text-whatsapp-400 rounded-full text-xs font-medium">
+                <span key={user._id} className="flex items-center gap-1 px-3 py-1 bg-chatsphere-500/10 text-chatsphere-700 dark:text-chatsphere-400 rounded-full text-xs font-medium">
                   {user.fullName}
                   <button onClick={() => toggleUser(user)}>
                     <IoClose className="w-3.5 h-3.5" />
@@ -131,7 +131,7 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
                   key={user._id}
                   onClick={() => toggleUser(user)}
                   className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-colors ${
-                    isSelected ? "bg-whatsapp-500/10" : "hover:bg-gray-50 dark:hover:bg-dark-3"
+                    isSelected ? "bg-chatsphere-500/10" : "hover:bg-gray-50 dark:hover:bg-dark-3"
                   }`}
                 >
                   <Avatar src={user.avatar} name={user.fullName} size="sm" />
@@ -140,7 +140,7 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
                     <p className="text-xs text-gray-400 truncate">{user.about}</p>
                   </div>
                   {isSelected && (
-                    <div className="w-5 h-5 bg-whatsapp-500 rounded-full flex items-center justify-center">
+                    <div className="w-5 h-5 bg-chatsphere-500 rounded-full flex items-center justify-center">
                       <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
@@ -155,7 +155,7 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
           <button
             onClick={() => setStep(2)}
             disabled={selectedUsers.length < 2}
-            className="w-full mt-4 py-2.5 bg-whatsapp-500 text-white font-medium rounded-xl hover:bg-whatsapp-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            className="w-full mt-4 py-2.5 bg-chatsphere-500 text-white font-medium rounded-xl hover:bg-chatsphere-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
             Next ({selectedUsers.length} selected)
           </button>
@@ -199,7 +199,7 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
                   onChange={(e) => setIsTemporary(e.target.checked)}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-dark-4 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-whatsapp-500"></div>
+                <div className="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-dark-4 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-chatsphere-500"></div>
               </label>
             </div>
 
@@ -221,8 +221,8 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
                       onClick={() => setDuration(opt.value)}
                       className={`py-1.5 px-2 rounded-lg text-xs font-medium transition-all ${
                         duration === opt.value
-                          ? "bg-whatsapp-500 text-white shadow-sm"
-                          : "bg-white dark:bg-dark-4 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-dark-4 hover:border-whatsapp-500"
+                          ? "bg-chatsphere-500 text-white shadow-sm"
+                          : "bg-white dark:bg-dark-4 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-dark-4 hover:border-chatsphere-500"
                       }`}
                     >
                       {opt.label}
@@ -254,7 +254,7 @@ const CreateGroupModal = ({ isOpen, onClose }) => {
             <button
               onClick={handleCreate}
               disabled={!groupName.trim() || isCreating || (isTemporary && duration === -1 && !customHours)}
-              className="flex-1 py-2.5 bg-whatsapp-500 text-white font-medium rounded-xl hover:bg-whatsapp-600 disabled:opacity-40 transition-all"
+              className="flex-1 py-2.5 bg-chatsphere-500 text-white font-medium rounded-xl hover:bg-chatsphere-600 disabled:opacity-40 transition-all"
             >
               {isCreating ? "Creating..." : "Create Group"}
             </button>

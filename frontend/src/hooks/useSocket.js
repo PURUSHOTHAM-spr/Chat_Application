@@ -5,6 +5,7 @@ import useChatStore from "../store/useChatStore";
 import useNotificationStore from "../store/useNotificationStore";
 import useAuthStore from "../store/useAuthStore";
 import useExpenseStore from "../store/useExpenseStore";
+import useTaskStore from "../store/useTaskStore";
 
 /**
  * Custom hook that sets up all Socket.IO event listeners.
@@ -32,6 +33,7 @@ const useSocket = () => {
   const { addNotification } = useNotificationStore();
   const { forceLogout } = useAuthStore();
   const { handleNewExpense, handleExpenseSettled } = useExpenseStore();
+  const { handleTaskEvent, handleTaskDeleted } = useTaskStore();
 
   useEffect(() => {
     const socket = getSocket();
@@ -129,6 +131,9 @@ const useSocket = () => {
       handleExpenseSettled(expense);
     };
 
+    const onTaskEvent = ({ task }) => handleTaskEvent(task);
+    const onTaskDeleted = ({ task }) => handleTaskDeleted(task?._id);
+
     // Register all listeners
     socket.on(SOCKET_EVENTS.MESSAGE_NEW, handleNewMessage);
     socket.on(SOCKET_EVENTS.MESSAGE_READ, handleMessageRead);
@@ -147,6 +152,11 @@ const useSocket = () => {
     socket.on("session:expired", handleSessionExpired);
     socket.on("user:updated", handleUserUpdated);
     socket.on("message:reaction", handleMessageReaction);
+    socket.on(SOCKET_EVENTS.TASK_CREATED, onTaskEvent);
+    socket.on(SOCKET_EVENTS.TASK_UPDATED, onTaskEvent);
+    socket.on(SOCKET_EVENTS.TASK_COMPLETED, onTaskEvent);
+    socket.on(SOCKET_EVENTS.TASK_REMINDER, onTaskEvent);
+    socket.on(SOCKET_EVENTS.TASK_DELETED, onTaskDeleted);
 
     // Cleanup on unmount
     return () => {
@@ -167,10 +177,14 @@ const useSocket = () => {
       socket.off("session:expired", handleSessionExpired);
       socket.off("user:updated", handleUserUpdated);
       socket.off("message:reaction", handleMessageReaction);
+      socket.off(SOCKET_EVENTS.TASK_CREATED, onTaskEvent);
+      socket.off(SOCKET_EVENTS.TASK_UPDATED, onTaskEvent);
+      socket.off(SOCKET_EVENTS.TASK_COMPLETED, onTaskEvent);
+      socket.off(SOCKET_EVENTS.TASK_REMINDER, onTaskEvent);
+      socket.off(SOCKET_EVENTS.TASK_DELETED, onTaskDeleted);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 };
 
 export default useSocket;
-

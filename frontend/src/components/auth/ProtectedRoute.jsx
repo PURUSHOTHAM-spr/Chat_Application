@@ -11,7 +11,7 @@ const ProtectedRoute = ({ children }) => {
     return (
       <div className="h-screen flex items-center justify-center bg-gray-50 dark:bg-dark-1">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 border-4 border-whatsapp-500 border-t-transparent rounded-full animate-spin" />
+          <div className="w-16 h-16 border-4 border-chatsphere-500 border-t-transparent rounded-full animate-spin" />
           <p className="text-gray-500 dark:text-gray-400 font-medium">Loading...</p>
         </div>
       </div>

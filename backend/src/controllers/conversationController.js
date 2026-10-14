@@ -324,8 +324,8 @@ export const setWallpaper = async (req, res, next) => {
   try {
     const { wallpaper } = req.body;
 
-    const conversation = await Conversation.findByIdAndUpdate(
-      req.params.id,
+    const conversation = await Conversation.findOneAndUpdate(
+      { _id: req.params.id, participants: req.user._id },
       { wallpaper },
       { new: true }
     );

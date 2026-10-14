@@ -82,7 +82,7 @@ export const updateAvatar = async (req, res, next) => {
 
     // Upload to Cloudinary
     const result = await cloudinary.uploader.upload(avatar, {
-      folder: "whatsapp-clone/avatars",
+      folder: "chatsphere/avatars",
       width: 200,
       height: 200,
       crop: "fill",

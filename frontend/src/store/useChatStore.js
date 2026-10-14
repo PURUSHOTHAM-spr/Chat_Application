@@ -3,6 +3,12 @@ import api from "../lib/axios";
 import toast from "react-hot-toast";
 import useAuthStore from "./useAuthStore";
 
+const conversationRequests = new Map();
+const messageRequests = new Map();
+const messageRequestVersions = new Map();
+const readRequests = new Set();
+let nextMessageRequestVersion = 0;
+
 /**
  * Chat store — manages conversations, messages, active chat, and online users.
  * This is the core state for the entire chat interface.
@@ -31,49 +37,70 @@ const useChatStore = create((set, get) => ({
    * Fetch all conversations for the sidebar.
    */
   fetchConversations: async () => {
+    if (conversationRequests.has("all")) return conversationRequests.get("all");
     set({ isLoadingConversations: true });
-    try {
-      const res = await api.get("/conversations");
-      set({ conversations: res.data.conversations, isLoadingConversations: false });
-    } catch (error) {
-      console.error("Failed to fetch conversations:", error);
-      set({ isLoadingConversations: false });
-    }
+    const request = api.get("/conversations")
+      .then((res) => {
+        set({ conversations: res.data.conversations, isLoadingConversations: false });
+        return res.data.conversations;
+      })
+      .catch((error) => {
+        console.error("Failed to fetch conversations:", error);
+        set({ isLoadingConversations: false });
+        return null;
+      })
+      .finally(() => conversationRequests.delete("all"));
+    conversationRequests.set("all", request);
+    return request;
   },
 
   /**
    * Set the active conversation and load its messages.
    */
   setActiveConversation: async (conversation) => {
+    const requestVersion = ++nextMessageRequestVersion;
     set({ activeConversation: conversation, messages: [], pagination: null });
     if (conversation) {
-      await get().fetchMessages(conversation._id);
+      await get().fetchMessages(conversation._id, 1, requestVersion);
     }
   },
 
   /**
    * Fetch paginated messages for a conversation.
    */
-  fetchMessages: async (conversationId, page = 1) => {
+  fetchMessages: async (conversationId, page = 1, requestVersion = null) => {
+    const version = requestVersion || (messageRequestVersions.get(conversationId) || 0) + 1;
+    messageRequestVersions.set(conversationId, version);
+    const key = `${conversationId}:${page}:${version}`;
+    if (messageRequests.has(key)) return messageRequests.get(key);
     set({ isLoadingMessages: true });
-    try {
-      const res = await api.get(`/messages/${conversationId}?page=${page}&limit=50`);
-      const { messages: newMessages, pagination } = res.data;
+    const request = api.get(`/messages/${conversationId}?page=${page}&limit=50`)
+      .then((res) => {
+        const { messages: newMessages, pagination } = res.data;
+        const state = get();
+        const isCurrentConversation = state.activeConversation?._id === conversationId;
+        const isCurrentRequest = messageRequestVersions.get(conversationId) === version;
+        if (!isCurrentConversation || !isCurrentRequest) return null;
 
-      if (page === 1) {
-        set({ messages: newMessages, pagination, isLoadingMessages: false });
-      } else {
-        // Prepend older messages for infinite scroll
-        set((state) => ({
-          messages: [...newMessages, ...state.messages],
-          pagination,
-          isLoadingMessages: false,
-        }));
-      }
-    } catch (error) {
-      console.error("Failed to fetch messages:", error);
-      set({ isLoadingMessages: false });
-    }
+        if (page === 1) {
+          set({ messages: newMessages, pagination, isLoadingMessages: false });
+        } else {
+          set((current) => ({
+            messages: [...newMessages, ...current.messages],
+            pagination,
+            isLoadingMessages: false,
+          }));
+        }
+        return newMessages;
+      })
+      .catch((error) => {
+        if (error.response?.status !== 401) console.error("Failed to fetch messages:", error);
+        if (get().activeConversation?._id === conversationId) set({ isLoadingMessages: false });
+        return null;
+      })
+      .finally(() => messageRequests.delete(key));
+    messageRequests.set(key, request);
+    return request;
   },
 
   /**
@@ -81,7 +108,7 @@ const useChatStore = create((set, get) => ({
    */
   loadMoreMessages: async () => {
     const { pagination, activeConversation } = get();
-    if (!pagination?.hasMore || !activeConversation) return;
+    if (!pagination?.hasMore || !activeConversation || get().isLoadingMessages) return;
     await get().fetchMessages(activeConversation._id, pagination.page + 1);
   },
 
@@ -208,6 +235,8 @@ const useChatStore = create((set, get) => ({
    * Mark messages as read for a conversation.
    */
   markAsRead: async (conversationId) => {
+    if (readRequests.has(conversationId)) return;
+    readRequests.add(conversationId);
     try {
       await api.put(`/messages/${conversationId}/read`);
       const currentUser = useAuthStore.getState().user;
@@ -222,6 +251,8 @@ const useChatStore = create((set, get) => ({
       }));
     } catch (error) {
       console.error("Failed to mark as read:", error);
+    } finally {
+      readRequests.delete(conversationId);
     }
   },
 

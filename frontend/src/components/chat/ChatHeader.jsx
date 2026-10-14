@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef } from "react";
 import {
   IoArrowBack,
   IoEllipsisVertical,
@@ -8,11 +8,13 @@ import {
   IoChevronDown,
   IoWalletOutline,
   IoHourglassOutline,
+  IoClipboardOutline,
 } from "react-icons/io5";
 import Avatar from "../common/Avatar";
 import useChatStore from "../../store/useChatStore";
 import useAuthStore from "../../store/useAuthStore";
 import useExpenseStore from "../../store/useExpenseStore";
+import useTaskStore from "../../store/useTaskStore";
 import ProfileModal from "../profile/ProfileModal";
 import GroupInfo from "../group/GroupInfo";
 
@@ -180,6 +182,13 @@ const ChatHeader = ({ onBack, onSearchChange }) => {
           >
             <IoArrowBack className="w-5 h-5 text-gray-600 dark:text-gray-400" />
           </button>
+          <button
+            onClick={() => useTaskStore.getState().setShowPanel(true)}
+            className="p-2.5 rounded-full hover:bg-gray-200 dark:hover:bg-dark-4 text-chatsphere-600 dark:text-chatsphere-400 transition-colors"
+            title="Tasks"
+          >
+            <IoClipboardOutline className="w-5 h-5" />
+          </button>
 
           {/* Avatar & Info */}
           <button
@@ -216,9 +225,9 @@ const ChatHeader = ({ onBack, onSearchChange }) => {
               <p
                 className={`text-xs truncate ${
                   typing.length > 0
-                    ? "text-whatsapp-500 font-medium"
+                    ? "text-chatsphere-500 font-medium"
                     : isOnline
-                    ? "text-whatsapp-500"
+                    ? "text-chatsphere-500"
                     : "text-gray-400 dark:text-gray-500"
                 }`}
               >
@@ -244,11 +253,11 @@ const ChatHeader = ({ onBack, onSearchChange }) => {
               onClick={handleToggleSearch}
               className={`p-2.5 rounded-full transition-colors ${
                 showSearch
-                  ? "bg-whatsapp-500/10 text-whatsapp-500"
+                  ? "bg-chatsphere-500/10 text-chatsphere-500"
                   : "hover:bg-gray-200 dark:hover:bg-dark-4"
               }`}
             >
-              <IoSearch className={`w-5 h-5 ${showSearch ? "text-whatsapp-500" : "text-gray-600 dark:text-gray-400"}`} />
+              <IoSearch className={`w-5 h-5 ${showSearch ? "text-chatsphere-500" : "text-gray-600 dark:text-gray-400"}`} />
             </button>
             <div className="relative">
               <button
@@ -315,7 +324,7 @@ const ChatHeader = ({ onBack, onSearchChange }) => {
                 onChange={handleSearchInput}
                 onKeyDown={handleSearchKeyDown}
                 placeholder="Search messages..."
-                className="w-full pl-4 pr-10 py-2 bg-gray-100 dark:bg-dark-4 rounded-xl text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-whatsapp-500/30 transition-all"
+                className="w-full pl-4 pr-10 py-2 bg-gray-100 dark:bg-dark-4 rounded-xl text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-chatsphere-500/30 transition-all"
                 autoComplete="off"
               />
               {searchQuery && (
@@ -375,4 +384,3 @@ const ChatHeader = ({ onBack, onSearchChange }) => {
 };
 
 export default ChatHeader;
-

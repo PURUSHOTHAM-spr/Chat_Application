@@ -34,12 +34,15 @@ export const getMessages = async (req, res, next) => {
       query.createdAt = { $gt: new Date(clearedAt) };
     }
 
-    const totalMessages = await Message.countDocuments(query);
-    const messages = await Message.find(query)
-      .populate("sender", "fullName avatar")
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
+    const [totalMessages, messages] = await Promise.all([
+      Message.countDocuments(query),
+      Message.find(query)
+        .populate("sender", "fullName avatar")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+    ]);
 
     // Return messages in chronological order
     res.json({
@@ -167,6 +170,13 @@ export const sendMessage = async (req, res, next) => {
 export const markAsRead = async (req, res, next) => {
   try {
     const { conversationId } = req.params;
+    const conversation = await Conversation.findOne({
+      _id: conversationId,
+      participants: req.user._id,
+    });
+    if (!conversation) {
+      return res.status(404).json({ message: "Conversation not found" });
+    }
 
     // Update all unread messages in this conversation that the user hasn't read
     const result = await Message.updateMany(
@@ -189,7 +199,6 @@ export const markAsRead = async (req, res, next) => {
     // Notify senders that their messages were read
     if (result.modifiedCount > 0) {
       const io = getIO();
-      const conversation = await Conversation.findById(conversationId);
       conversation.participants.forEach((pId) => {
         if (pId.toString() !== req.user._id.toString()) {
           io.to(pId.toString()).emit("message:read", {
@@ -282,7 +291,7 @@ export const uploadFile = async (req, res, next) => {
 
     try {
       const result = await cloudinary.uploader.upload(uploadData, {
-        folder: "whatsapp-clone/messages",
+        folder: "chatsphere/messages",
         resource_type: "auto",
         max_file_size: 10000000, // 10MB
       });
@@ -321,6 +330,13 @@ export const reactToMessage = async (req, res, next) => {
     const message = await Message.findById(id);
     if (!message) {
       return res.status(404).json({ message: "Message not found" });
+    }
+    const conversation = await Conversation.exists({
+      _id: message.conversationId,
+      participants: userId,
+    });
+    if (!conversation) {
+      return res.status(403).json({ message: "Not a conversation member" });
     }
 
     // Check if user already reacted

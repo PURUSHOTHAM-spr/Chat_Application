@@ -5,40 +5,40 @@ export default {
   theme: {
     extend: {
       colors: {
-        // WhatsApp green palette
-        whatsapp: {
-          50: "#e8f5e9",
-          100: "#c8e6c9",
-          200: "#a5d6a7",
-          300: "#81c784",
-          400: "#66bb6a",
-          500: "#25D366", // Primary WhatsApp green
-          600: "#128C7E", // WhatsApp teal
-          700: "#075E54", // Dark teal
-          800: "#054D44",
-          900: "#023D36",
+        // ChatSphere slate blue palette
+        chatsphere: {
+          50: "#E3EAF3",
+          100: "#E3EAF3",
+          200: "#C8D5E6",
+          300: "#8198BB",
+          400: "#8198BB",
+          500: "#526F99",
+          600: "#455F85",
+          700: "#3D526F",
+          800: "#3D526F",
+          900: "#3D526F",
         },
         // Dark mode surfaces
         dark: {
-          1: "#111B21",   // Deepest background
-          2: "#1F2C34",   // Sidebar bg
-          3: "#233138",   // Chat bg
-          4: "#2A3942",   // Input bg
-          5: "#3B4A54",   // Hover state
+          1: "#171B22",
+          2: "#202631",
+          3: "#2A3240",
+          4: "#363F4D",
+          5: "#363F4D",
         },
         // Light mode surfaces
         light: {
           1: "#FFFFFF",
-          2: "#F0F2F5",
-          3: "#E9EDEF",
-          4: "#D1D7DB",
+          2: "#ECEFF3",
+          3: "#E6EAF0",
+          4: "#D9DEE6",
         },
         // Chat bubble colors
         bubble: {
-          out: "#D9FDD3",      // Outgoing (light)
-          outDark: "#005C4B",  // Outgoing (dark)
-          in: "#FFFFFF",       // Incoming (light)
-          inDark: "#1F2C34",   // Incoming (dark)
+          out: "#E3EAF3",
+          outDark: "#263B56",
+          in: "#FFFFFF",
+          inDark: "#2A3240",
         },
       },
       fontFamily: {

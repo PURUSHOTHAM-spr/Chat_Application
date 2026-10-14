@@ -30,7 +30,7 @@ const useThemeStore = create(
       },
     }),
     {
-      name: "whatsapp-theme",
+      name: "chatsphere-theme",
     }
   )
 );

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import MessageBubble from "./MessageBubble";
 import TypingIndicator from "./TypingIndicator";
 import { MessageSkeleton } from "../common/LoadingSkeleton";
@@ -12,9 +12,13 @@ import useInfiniteScroll from "../../hooks/useInfiniteScroll";
  * Supports in-chat search highlighting and navigation.
  */
 const MessageList = ({ searchQuery = "", highlightedMessageId = null }) => {
-  const { messages, isLoadingMessages, pagination, loadMoreMessages, activeConversation, typingUsers } =
-    useChatStore();
-  const { user } = useAuthStore();
+  const messages = useChatStore((state) => state.messages);
+  const isLoadingMessages = useChatStore((state) => state.isLoadingMessages);
+  const pagination = useChatStore((state) => state.pagination);
+  const loadMoreMessages = useChatStore((state) => state.loadMoreMessages);
+  const activeConversation = useChatStore((state) => state.activeConversation);
+  const typingUsers = useChatStore((state) => state.typingUsers);
+  const user = useAuthStore((state) => state.user);
   const bottomRef = useRef(null);
   const containerRef = useRef(null);
   const messageRefs = useRef({});
@@ -31,7 +35,7 @@ const MessageList = ({ searchQuery = "", highlightedMessageId = null }) => {
     // Don't auto-scroll while searching
     if (searchQuery) return;
     if (bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+      bottomRef.current.scrollIntoView({ behavior: "auto" });
     }
   }, [messages.length, searchQuery]);
 
@@ -55,17 +59,19 @@ const MessageList = ({ searchQuery = "", highlightedMessageId = null }) => {
   const typing = typingUsers[activeConversation?._id] || [];
 
   // Group messages by date for date separators
-  const groupedMessages = [];
-  let lastDate = "";
-
-  messages.forEach((msg) => {
-    const msgDate = new Date(msg.createdAt).toDateString();
-    if (msgDate !== lastDate) {
-      groupedMessages.push({ type: "date", date: msgDate, key: `date-${msgDate}` });
-      lastDate = msgDate;
-    }
-    groupedMessages.push({ type: "message", data: msg, key: msg._id || msg.tempId });
-  });
+  const groupedMessages = useMemo(() => {
+    const grouped = [];
+    let lastDate = "";
+    messages.forEach((msg) => {
+      const msgDate = new Date(msg.createdAt).toDateString();
+      if (msgDate !== lastDate) {
+        grouped.push({ type: "date", date: msgDate, key: `date-${msgDate}` });
+        lastDate = msgDate;
+      }
+      grouped.push({ type: "message", data: msg, key: msg._id || msg.tempId });
+    });
+    return grouped;
+  }, [messages]);
 
   if (isLoadingMessages && messages.length === 0) {
     return <MessageSkeleton />;
@@ -77,7 +83,7 @@ const MessageList = ({ searchQuery = "", highlightedMessageId = null }) => {
       {pagination?.hasMore && (
         <div ref={topRef} className="flex justify-center py-3">
           {isLoadingMessages && (
-            <div className="w-6 h-6 border-2 border-whatsapp-500 border-t-transparent rounded-full animate-spin" />
+            <div className="w-6 h-6 border-2 border-chatsphere-500 border-t-transparent rounded-full animate-spin" />
           )}
         </div>
       )}
@@ -143,4 +149,3 @@ const formatDateSeparator = (dateStr) => {
 };
 
 export default MessageList;
-

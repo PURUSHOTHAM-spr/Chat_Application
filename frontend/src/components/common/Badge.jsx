@@ -6,7 +6,7 @@ const Badge = ({ count, className = "" }) => {
 
   return (
     <span
-      className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-whatsapp-500 rounded-full ${className}`}
+      className={`inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-chatsphere-500 rounded-full ${className}`}
     >
       {count > 99 ? "99+" : count}
     </span>

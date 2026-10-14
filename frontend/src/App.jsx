@@ -25,7 +25,7 @@ function App() {
   // Full-screen loading while checking auth
   if (isCheckingAuth) {
     return (
-      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-whatsapp-700 to-whatsapp-500">
+      <div className="h-screen flex items-center justify-center bg-chatsphere-700">
         <div className="flex flex-col items-center gap-4">
           <div className="w-20 h-20 bg-white/20 backdrop-blur-xl rounded-3xl flex items-center justify-center">
             <svg className="w-10 h-10 text-white animate-pulse" fill="currentColor" viewBox="0 0 24 24">
@@ -46,19 +46,19 @@ function App() {
         toastOptions={{
           duration: 3000,
           style: {
-            background: "var(--toast-bg, #333)",
+            background: "var(--toast-bg, #252B36)",
             color: "var(--toast-color, #fff)",
             borderRadius: "12px",
             fontSize: "14px",
             padding: "12px 20px",
           },
           success: {
-            style: { background: "#128C7E", color: "#fff" },
-            iconTheme: { primary: "#fff", secondary: "#128C7E" },
+            style: { background: "#526F99", color: "#fff" },
+            iconTheme: { primary: "#fff", secondary: "#526F99" },
           },
           error: {
-            style: { background: "#ef4444", color: "#fff" },
-            iconTheme: { primary: "#fff", secondary: "#ef4444" },
+            style: { background: "#B84C4C", color: "#fff" },
+            iconTheme: { primary: "#fff", secondary: "#B84C4C" },
           },
         }}
       />

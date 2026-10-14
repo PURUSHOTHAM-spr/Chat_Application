@@ -128,7 +128,7 @@ const GroupInfo = ({ conversation, isOpen, onClose }) => {
             {isAdmin && !showAddSection && (
               <button
                 onClick={() => setShowAddSection(true)}
-                className="flex items-center gap-1 text-xs text-whatsapp-500 hover:text-whatsapp-600 font-semibold transition-colors"
+                className="flex items-center gap-1 text-xs text-chatsphere-500 hover:text-chatsphere-600 font-semibold transition-colors"
               >
                 <IoPersonAdd className="w-3.5 h-3.5" /> Add Participant
               </button>
@@ -160,7 +160,7 @@ const GroupInfo = ({ conversation, isOpen, onClose }) => {
                   value={searchQuery}
                   onChange={handleSearchChange}
                   placeholder="Search users to add..."
-                  className="w-full pl-10 pr-4 py-2 bg-white dark:bg-dark-3 border border-gray-200 dark:border-dark-4 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-whatsapp-500"
+                  className="w-full pl-10 pr-4 py-2 bg-white dark:bg-dark-3 border border-gray-200 dark:border-dark-4 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-chatsphere-500"
                 />
               </div>
 
@@ -168,7 +168,7 @@ const GroupInfo = ({ conversation, isOpen, onClose }) => {
               {selectedUsers.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 py-1">
                   {selectedUsers.map((u) => (
-                    <span key={u._id} className="flex items-center gap-1 px-2.5 py-0.5 bg-whatsapp-500/10 text-whatsapp-700 dark:text-whatsapp-400 rounded-full text-[11px] font-medium">
+                    <span key={u._id} className="flex items-center gap-1 px-2.5 py-0.5 bg-chatsphere-500/10 text-chatsphere-700 dark:text-chatsphere-400 rounded-full text-[11px] font-medium">
                       {u.fullName}
                       <button onClick={() => toggleUserSelection(u)}>
                         <IoClose className="w-3 h-3" />
@@ -189,7 +189,7 @@ const GroupInfo = ({ conversation, isOpen, onClose }) => {
                           key={u._id}
                           onClick={() => toggleUserSelection(u)}
                           className={`w-full flex items-center gap-2.5 p-1.5 rounded-lg transition-colors ${
-                            isSelected ? "bg-whatsapp-500/10" : "hover:bg-gray-50 dark:hover:bg-dark-4"
+                            isSelected ? "bg-chatsphere-500/10" : "hover:bg-gray-50 dark:hover:bg-dark-4"
                           }`}
                         >
                           <Avatar src={u.avatar} name={u.fullName} size="xs" />
@@ -197,7 +197,7 @@ const GroupInfo = ({ conversation, isOpen, onClose }) => {
                             <p className="text-xs font-medium text-gray-900 dark:text-white truncate">{u.fullName}</p>
                           </div>
                           {isSelected && (
-                            <div className="w-4 h-4 bg-whatsapp-500 rounded-full flex items-center justify-center">
+                            <div className="w-4 h-4 bg-chatsphere-500 rounded-full flex items-center justify-center">
                               <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3.5} d="M5 13l4 4L19 7" />
                               </svg>
@@ -217,7 +217,7 @@ const GroupInfo = ({ conversation, isOpen, onClose }) => {
                 <button
                   disabled={selectedUsers.length === 0 || isSubmitting}
                   onClick={handleAddMembers}
-                  className="px-3 py-1.5 bg-whatsapp-500 text-white rounded-lg text-xs font-semibold hover:bg-whatsapp-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                  className="px-3 py-1.5 bg-chatsphere-500 text-white rounded-lg text-xs font-semibold hover:bg-chatsphere-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 >
                   {isSubmitting ? "Adding..." : `Add Selected (${selectedUsers.length})`}
                 </button>
@@ -234,7 +234,7 @@ const GroupInfo = ({ conversation, isOpen, onClose }) => {
                   <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                     {p.fullName}
                     {p._id === groupInfo?.admin?._id && (
-                      <span className="ml-2 text-xs text-whatsapp-500 font-normal">Admin</span>
+                      <span className="ml-2 text-xs text-chatsphere-500 font-normal">Admin</span>
                     )}
                   </p>
                   <p className="text-xs text-gray-400 truncate">{p.about || p.email}</p>

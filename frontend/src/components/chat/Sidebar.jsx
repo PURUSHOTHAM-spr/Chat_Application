@@ -88,7 +88,7 @@ const Sidebar = () => {
                   className="w-full px-4 py-2.5 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-4 transition-colors flex items-center justify-between"
                 >
                   <span>Scheduled Messages</span>
-                  <IoTime className="w-4 h-4 text-whatsapp-500" />
+                  <IoTime className="w-4 h-4 text-chatsphere-500" />
                 </button>
                 <button
                   onClick={() => {
@@ -118,7 +118,7 @@ const Sidebar = () => {
               setIsSearching(e.target.value.length > 0);
             }}
             placeholder="Search or start new chat"
-            className="w-full pl-10 pr-4 py-2.5 bg-light-2 dark:bg-dark-3 rounded-xl text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-whatsapp-500/30 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-light-2 dark:bg-dark-3 rounded-xl text-sm text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-chatsphere-500/30 transition-all"
           />
           {searchQuery && (
             <button

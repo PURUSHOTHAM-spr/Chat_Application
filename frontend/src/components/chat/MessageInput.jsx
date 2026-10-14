@@ -312,7 +312,7 @@ const MessageInput = () => {
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">You blocked this contact. Messages cannot be sent or received.</p>
         <button 
           onClick={() => toggleBlockUser(recipient._id)}
-          className="text-sm text-whatsapp-500 hover:text-whatsapp-600 font-medium"
+          className="text-sm text-chatsphere-500 hover:text-chatsphere-600 font-medium"
         >
           Tap to unblock
         </button>
@@ -340,8 +340,8 @@ const MessageInput = () => {
             {preview.type === "image" ? (
               <img src={preview.data} alt="Preview" className="w-16 h-16 rounded-lg object-cover" />
             ) : (
-              <div className="w-16 h-16 bg-whatsapp-500/10 rounded-lg flex items-center justify-center">
-                <IoDocument className="w-8 h-8 text-whatsapp-500" />
+              <div className="w-16 h-16 bg-chatsphere-500/10 rounded-lg flex items-center justify-center">
+                <IoDocument className="w-8 h-8 text-chatsphere-500" />
               </div>
             )}
             <button
@@ -423,7 +423,7 @@ const MessageInput = () => {
             onPaste={handlePaste}
             placeholder="Type a message"
             rows={1}
-            className="w-full px-4 py-3 bg-white dark:bg-dark-3 rounded-2xl text-sm text-gray-900 dark:text-white placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-whatsapp-500/30 max-h-32 overflow-y-auto transition-all"
+            className="w-full px-4 py-3 bg-white dark:bg-dark-3 rounded-2xl text-sm text-gray-900 dark:text-white placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-chatsphere-500/30 max-h-32 overflow-y-auto transition-all"
             style={{ minHeight: "44px" }}
             onInput={(e) => {
               e.target.style.height = "44px";
@@ -438,7 +438,7 @@ const MessageInput = () => {
           onClick={handleOpenSchedule}
           className={`p-2.5 rounded-full transition-colors flex-shrink-0 ${
             showSchedule
-              ? "bg-whatsapp-500/10 text-whatsapp-600 dark:text-whatsapp-400"
+              ? "bg-chatsphere-500/10 text-chatsphere-600 dark:text-chatsphere-400"
               : "hover:bg-gray-200 dark:hover:bg-dark-4 text-gray-500 dark:text-gray-400"
           }`}
           title="Schedule message"
@@ -452,7 +452,7 @@ const MessageInput = () => {
             id="send-button"
             onClick={handleSend}
             disabled={isUploading || isSendingMessage}
-            className="p-3 bg-whatsapp-500 text-white rounded-full hover:bg-whatsapp-600 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-whatsapp-500/25 flex-shrink-0 disabled:opacity-50"
+            className="p-3 bg-chatsphere-500 text-white rounded-full hover:bg-chatsphere-600 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-chatsphere-500/25 flex-shrink-0 disabled:opacity-50"
             title="Send now"
           >
             {isUploading ? (
@@ -477,7 +477,7 @@ const MessageInput = () => {
         ) : (
           <button
             onClick={startVoiceRecording}
-            className="p-3 bg-whatsapp-500 text-white rounded-full hover:bg-whatsapp-600 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-whatsapp-500/25 flex-shrink-0"
+            className="p-3 bg-chatsphere-500 text-white rounded-full hover:bg-chatsphere-600 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-chatsphere-500/25 flex-shrink-0"
           >
             <IoMic className="w-5 h-5" />
           </button>
@@ -489,7 +489,7 @@ const MessageInput = () => {
         <div className="absolute bottom-20 right-4 w-80 bg-white dark:bg-dark-3 rounded-2xl shadow-2xl border border-gray-100 dark:border-dark-4 p-4 z-50 animate-slide-up">
           <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-dark-4 mb-3">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-whatsapp-500/10 flex items-center justify-center text-whatsapp-600 dark:text-whatsapp-400">
+              <div className="w-7 h-7 rounded-lg bg-chatsphere-500/10 flex items-center justify-center text-chatsphere-600 dark:text-chatsphere-400">
                 <IoTime className="w-4 h-4" />
               </div>
               <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Schedule Message</h4>
@@ -508,28 +508,28 @@ const MessageInput = () => {
             <button
               type="button"
               onClick={() => setPresetSchedule(30)}
-              className="px-2.5 py-1.5 text-xs rounded-lg bg-gray-50 dark:bg-dark-4 hover:bg-whatsapp-500/10 hover:text-whatsapp-600 dark:hover:text-whatsapp-400 text-gray-700 dark:text-gray-300 font-medium transition-colors text-left"
+              className="px-2.5 py-1.5 text-xs rounded-lg bg-gray-50 dark:bg-dark-4 hover:bg-chatsphere-500/10 hover:text-chatsphere-600 dark:hover:text-chatsphere-400 text-gray-700 dark:text-gray-300 font-medium transition-colors text-left"
             >
               ⏱️ In 30 mins
             </button>
             <button
               type="button"
               onClick={() => setPresetSchedule(60)}
-              className="px-2.5 py-1.5 text-xs rounded-lg bg-gray-50 dark:bg-dark-4 hover:bg-whatsapp-500/10 hover:text-whatsapp-600 dark:hover:text-whatsapp-400 text-gray-700 dark:text-gray-300 font-medium transition-colors text-left"
+              className="px-2.5 py-1.5 text-xs rounded-lg bg-gray-50 dark:bg-dark-4 hover:bg-chatsphere-500/10 hover:text-chatsphere-600 dark:hover:text-chatsphere-400 text-gray-700 dark:text-gray-300 font-medium transition-colors text-left"
             >
               ⏱️ In 1 hour
             </button>
             <button
               type="button"
               onClick={() => setPresetSchedule(180)}
-              className="px-2.5 py-1.5 text-xs rounded-lg bg-gray-50 dark:bg-dark-4 hover:bg-whatsapp-500/10 hover:text-whatsapp-600 dark:hover:text-whatsapp-400 text-gray-700 dark:text-gray-300 font-medium transition-colors text-left"
+              className="px-2.5 py-1.5 text-xs rounded-lg bg-gray-50 dark:bg-dark-4 hover:bg-chatsphere-500/10 hover:text-chatsphere-600 dark:hover:text-chatsphere-400 text-gray-700 dark:text-gray-300 font-medium transition-colors text-left"
             >
               ⏱️ In 3 hours
             </button>
             <button
               type="button"
               onClick={() => setPresetSchedule(0, true)}
-              className="px-2.5 py-1.5 text-xs rounded-lg bg-gray-50 dark:bg-dark-4 hover:bg-whatsapp-500/10 hover:text-whatsapp-600 dark:hover:text-whatsapp-400 text-gray-700 dark:text-gray-300 font-medium transition-colors text-left"
+              className="px-2.5 py-1.5 text-xs rounded-lg bg-gray-50 dark:bg-dark-4 hover:bg-chatsphere-500/10 hover:text-chatsphere-600 dark:hover:text-chatsphere-400 text-gray-700 dark:text-gray-300 font-medium transition-colors text-left"
             >
               ☀️ Tomorrow 9 AM
             </button>
@@ -543,14 +543,14 @@ const MessageInput = () => {
             type="datetime-local"
             value={scheduleDateTime}
             onChange={(e) => setScheduleDateTime(e.target.value)}
-            className="w-full px-3 py-2 bg-gray-50 dark:bg-dark-4 border border-gray-200 dark:border-dark-4 rounded-xl text-xs text-gray-900 dark:text-white mb-3 focus:outline-none focus:ring-1 focus:ring-whatsapp-500"
+            className="w-full px-3 py-2 bg-gray-50 dark:bg-dark-4 border border-gray-200 dark:border-dark-4 rounded-xl text-xs text-gray-900 dark:text-white mb-3 focus:outline-none focus:ring-1 focus:ring-chatsphere-500"
           />
 
           <button
             type="button"
             onClick={handleScheduleSubmit}
             disabled={isScheduling || isUploading || (!text.trim() && !preview)}
-            className="w-full py-2 bg-whatsapp-500 text-white rounded-xl text-xs font-semibold hover:bg-whatsapp-600 disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shadow-md shadow-whatsapp-500/20"
+            className="w-full py-2 bg-chatsphere-500 text-white rounded-xl text-xs font-semibold hover:bg-chatsphere-600 disabled:opacity-40 transition-all flex items-center justify-center gap-1.5 shadow-md shadow-chatsphere-500/20"
           >
             {isScheduling || isUploading ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

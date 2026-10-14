@@ -81,7 +81,7 @@ const ProfileSettings = ({ onClose }) => {
 
           {/* Full Name */}
           <div>
-            <label className="block text-xs text-whatsapp-600 dark:text-whatsapp-400 font-semibold mb-2">
+            <label className="block text-xs text-chatsphere-600 dark:text-chatsphere-400 font-semibold mb-2">
               Your Name
             </label>
             <div className="flex items-center gap-2">
@@ -89,7 +89,7 @@ const ProfileSettings = ({ onClose }) => {
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="flex-1 px-0 py-2 bg-transparent border-b-2 border-whatsapp-500 text-gray-900 dark:text-white text-base focus:outline-none"
+                className="flex-1 px-0 py-2 bg-transparent border-b-2 border-chatsphere-500 text-gray-900 dark:text-white text-base focus:outline-none"
                 maxLength={50}
               />
             </div>
@@ -100,21 +100,21 @@ const ProfileSettings = ({ onClose }) => {
 
           {/* About */}
           <div>
-            <label className="block text-xs text-whatsapp-600 dark:text-whatsapp-400 font-semibold mb-2">
+            <label className="block text-xs text-chatsphere-600 dark:text-chatsphere-400 font-semibold mb-2">
               About
             </label>
             <input
               type="text"
               value={about}
               onChange={(e) => setAbout(e.target.value)}
-              className="w-full px-0 py-2 bg-transparent border-b-2 border-gray-200 dark:border-dark-4 text-gray-900 dark:text-white text-base focus:outline-none focus:border-whatsapp-500 transition-colors"
+              className="w-full px-0 py-2 bg-transparent border-b-2 border-gray-200 dark:border-dark-4 text-gray-900 dark:text-white text-base focus:outline-none focus:border-chatsphere-500 transition-colors"
               maxLength={150}
             />
           </div>
 
           {/* Email (read only) */}
           <div>
-            <label className="block text-xs text-whatsapp-600 dark:text-whatsapp-400 font-semibold mb-2">
+            <label className="block text-xs text-chatsphere-600 dark:text-chatsphere-400 font-semibold mb-2">
               Email
             </label>
             <p className="py-2 text-gray-500 dark:text-gray-400 text-base">{user?.email}</p>
@@ -124,7 +124,7 @@ const ProfileSettings = ({ onClose }) => {
           <button
             onClick={handleSave}
             disabled={isUpdating}
-            className="w-full py-3 bg-gradient-to-r from-whatsapp-600 to-whatsapp-500 text-white font-semibold rounded-xl hover:from-whatsapp-700 hover:to-whatsapp-600 transition-all disabled:opacity-50 shadow-lg shadow-whatsapp-500/25"
+            className="w-full py-3 bg-chatsphere-500 text-white font-semibold rounded-xl hover:bg-chatsphere-600 transition-all disabled:opacity-50 shadow-lg shadow-chatsphere-500/25"
           >
             {isUpdating ? "Saving..." : "Save Changes"}
           </button>

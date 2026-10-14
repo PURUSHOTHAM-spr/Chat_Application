@@ -31,7 +31,7 @@ const SignupPage = () => {
   const passwordsMatch = formData.password === formData.confirmPassword || formData.confirmPassword === "";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-600 via-whatsapp-600 to-teal-700 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-chatsphere-700 p-4">
       {/* Background decoration */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute -top-40 -left-40 w-80 h-80 bg-emerald-400/20 rounded-full blur-3xl" />
@@ -138,7 +138,7 @@ const SignupPage = () => {
               id="signup-submit"
               type="submit"
               disabled={isLoading || !passwordsMatch}
-              className="w-full py-3 bg-gradient-to-r from-whatsapp-600 to-emerald-500 text-white font-semibold rounded-xl hover:from-whatsapp-700 hover:to-emerald-600 focus:outline-none focus:ring-4 focus:ring-whatsapp-500/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-whatsapp-500/25 mt-2"
+              className="w-full py-3 bg-chatsphere-500 text-white font-semibold rounded-xl hover:bg-chatsphere-600 focus:outline-none focus:ring-4 focus:ring-chatsphere-500/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-chatsphere-500/25 mt-2"
             >
               {isLoading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -159,7 +159,7 @@ const SignupPage = () => {
             Already have an account?{" "}
             <Link
               to="/login"
-              className="font-semibold text-whatsapp-600 hover:text-whatsapp-700 transition-colors"
+              className="font-semibold text-chatsphere-600 hover:text-chatsphere-700 transition-colors"
             >
               Sign in
             </Link>

@@ -1,9 +1,11 @@
 import { useState, useRef } from "react";
-import { IoCheckmark, IoCheckmarkDone, IoTrash, IoDownload, IoPlay, IoPause } from "react-icons/io5";
+import { memo } from "react";
+import { IoCheckmark, IoCheckmarkDone, IoTrash, IoDownload, IoPlay, IoPause, IoClipboardOutline } from "react-icons/io5";
 import { formatFullTime, formatFileSize } from "../../lib/utils";
 import useChatStore from "../../store/useChatStore";
 import useExpenseStore from "../../store/useExpenseStore";
 import { MESSAGE_STATUS } from "../../constants";
+import useTaskStore from "../../store/useTaskStore";
 
 /**
  * Message bubble — supports text, image, file, voice, and system messages.
@@ -18,7 +20,7 @@ const MessageBubble = ({ message, isOwn, searchQuery = "", isHighlighted = false
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef(null);
-  const { deleteMessage, reactToMessage } = useChatStore();
+  const { deleteMessage, reactToMessage, activeConversation } = useChatStore();
 
   const EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
   
@@ -41,6 +43,13 @@ const MessageBubble = ({ message, isOwn, searchQuery = "", isHighlighted = false
               className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-[11px] font-semibold transition-colors flex-shrink-0"
             >
               View Expenses
+            </button>
+            <button
+              onClick={() => useTaskStore.getState().openCreateModal(message, activeConversation)}
+              className="p-1.5 bg-white dark:bg-dark-3 rounded-full shadow-md hover:bg-chatsphere-50 dark:hover:bg-chatsphere-500/10 transition-colors"
+              title="Create task"
+            >
+              <IoClipboardOutline className="w-3.5 h-3.5 text-chatsphere-600" />
             </button>
           </div>
         ) : (
@@ -174,7 +183,7 @@ const MessageBubble = ({ message, isOwn, searchQuery = "", isHighlighted = false
           isHighlighted ? "ring-2 ring-yellow-400 dark:ring-yellow-500 ring-offset-1 dark:ring-offset-dark-1" : ""
         }`}>
           {!isOwn && message.sender?.fullName && (
-            <p className="text-xs font-semibold text-whatsapp-600 dark:text-whatsapp-400 mb-0.5">{message.sender.fullName}</p>
+            <p className="text-xs font-semibold text-chatsphere-600 dark:text-chatsphere-400 mb-0.5">{message.sender.fullName}</p>
           )}
 
           {message.type === "image" && (
@@ -186,8 +195,8 @@ const MessageBubble = ({ message, isOwn, searchQuery = "", isHighlighted = false
 
           {message.type === "file" && (
             <a href={message.content} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-2 bg-white/50 dark:bg-white/5 rounded-lg hover:bg-white/80 dark:hover:bg-white/10 transition-colors">
-              <div className="w-10 h-10 bg-whatsapp-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                <IoDownload className="w-5 h-5 text-whatsapp-600" />
+              <div className="w-10 h-10 bg-chatsphere-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                <IoDownload className="w-5 h-5 text-chatsphere-600" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{message.fileName || "File"}</p>
@@ -226,7 +235,7 @@ const MessageBubble = ({ message, isOwn, searchQuery = "", isHighlighted = false
                     setIsPlaying(true);
                   }
                 }}
-                className="w-8 h-8 bg-whatsapp-500 rounded-full flex items-center justify-center flex-shrink-0"
+                className="w-8 h-8 bg-chatsphere-500 rounded-full flex items-center justify-center flex-shrink-0"
                 type="button"
               >
                 {isPlaying ? <IoPause className="w-4 h-4 text-white" /> : <IoPlay className="w-4 h-4 text-white" />}
@@ -234,7 +243,7 @@ const MessageBubble = ({ message, isOwn, searchQuery = "", isHighlighted = false
               <div className="flex-1">
                 <div className="h-3 bg-white/20 dark:bg-white/10 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-whatsapp-500"
+                    className="h-full bg-chatsphere-500"
                     style={{ width: duration ? `${(currentTime / duration) * 100}%` : "0%" }}
                   />
                 </div>
@@ -279,4 +288,4 @@ const MessageBubble = ({ message, isOwn, searchQuery = "", isHighlighted = false
   );
 };
 
-export default MessageBubble;
+export default memo(MessageBubble);
