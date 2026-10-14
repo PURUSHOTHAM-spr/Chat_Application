@@ -18,6 +18,7 @@ A production-ready real-time messaging platform built with React, Node.js, Socke
 - **Dark/Light Mode** — Theme toggle with persistence
 - **Profile Management** — Edit name, about, and avatar
 - **Notifications** — In-app notification panel
+- **Chat-to-Tasks** — Convert messages into assigned, prioritized tasks with due dates and reminders
 - **Infinite Scroll** — Load older messages on scroll
 - **Responsive Design** — Mobile-first, works on all devices
 - **PWA Support** — Installable as a desktop/mobile app
@@ -135,6 +136,20 @@ npm run dev
 | DELETE | `/:id` | Delete message |
 | POST | `/upload` | Upload file |
 
+### Tasks — `/api/tasks`
+All task endpoints require authentication and verify conversation membership.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/` | Create a task, optionally linked to a source message |
+| GET | `/my` | Get tasks assigned to or created by the current user |
+| GET | `/conversation/:conversationId` | Get tasks for a conversation; supports `status`, `priority`, `assignedTo`, and `search` |
+| GET | `/:taskId` | Get task details and activity |
+| PUT | `/:taskId` | Update an authorized task |
+| PATCH | `/:taskId/status` | Update task status |
+| PATCH | `/:taskId/archive` | Archive a task |
+| DELETE | `/:taskId` | Delete a task when permitted |
+
 ## 🔌 Socket.IO Events
 
 | Event | Direction | Description |
@@ -147,6 +162,11 @@ npm run dev
 | `typing:stop` | Bidirectional | Typing stopped |
 | `user:online` | Server → Client | User came online |
 | `user:offline` | Server → Client | User went offline |
+| `task:created` | Server → Client | A task was created |
+| `task:updated` | Server → Client | A task was updated |
+| `task:completed` | Server → Client | A task was completed |
+| `task:deleted` | Server → Client | A task was deleted |
+| `task:reminder` | Server → Client | A due reminder was delivered |
 
 ## 🗄️ MongoDB Relationships
 
@@ -154,11 +174,16 @@ npm run dev
 User ──< participates >── Conversation
 User ──< sends >── Message
 Conversation ──< contains >── Message
+Conversation ──< contains >── Task
+Message ──< may originate >── Task
 ```
 
 - **User** → stores profile info, online status, lastSeen
 - **Conversation** → links participants, stores lastMessage (subset pattern)
 - **Message** → references conversationId and sender, tracks read receipts
+- **Task** → references conversation, optional source message, creator, and assignee; stores status, priority, dates, and activity
+
+Task reminders are polled by the existing 30-second scheduler and claimed atomically using `reminderSentAt`, so a reminder is not delivered twice after a restart or across concurrent workers. Expired temporary groups remain readable but reject task mutations.
 
 ## 🚢 Deployment
 

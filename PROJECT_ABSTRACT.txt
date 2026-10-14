@@ -1,0 +1,63 @@
+ChatSphere: A Secure, Real-Time Collaboration and Communication Platform
+
+PROJECT ABSTRACT
+
+ChatSphere is a full-stack, real-time communication and collaboration platform designed to provide individuals and groups with a unified environment for messaging, task coordination, expense management, scheduled communication, and user interaction. The application combines a modern React 19 frontend with a Node.js and Express backend, MongoDB persistence through Mongoose, and Socket.IO-based real-time communication.
+
+The platform supports secure user registration and authentication, password hashing, protected API access, profile and avatar management, direct messaging, group conversations, online and offline presence, last-seen tracking, typing indicators, message delivery and read receipts, emoji reactions, message deletion, and paginated infinite-scroll history. Users can exchange text messages, images, files, and voice-related content through Cloudinary-backed uploads. The interface is responsive and mobile-friendly, with dark and light themes, toast notifications, loading states, search capabilities, and Progressive Web App support.
+
+A key feature of ChatSphere is its Chat-to-Tasks workflow, which allows users to convert important messages into actionable tasks. Tasks can be assigned to conversation members, prioritized, given due dates and reminders, filtered by status or assignee, archived, completed, and tracked through activity history. Real-time task events keep participants synchronized, while a backend scheduler processes reminders with atomic claiming to prevent duplicate notifications. The platform also includes scheduled messages, enabling users to prepare messages for future delivery, and an expense-sharing module for recording expenses and managing split costs within conversations.
+
+The system follows a modular client-server architecture. Zustand stores manage authentication, chat, tasks, notifications, expenses, and themes on the frontend, while the backend separates routing, controllers, models, middleware, socket handlers, configuration, and scheduled services. MongoDB models represent users, conversations, messages, tasks, scheduled messages, and expenses, with indexed queries and paginated retrieval to support responsive performance. Request deduplication, stale-response protection, optimized Zustand subscriptions, memoized message rendering, efficient database queries, and real-time event reconciliation improve refresh reliability and chat response speed.
+
+Security and reliability are addressed through JWT-based authentication, bcrypt password hashing, HTTP-only cookie support, protected conversation membership checks, authorization controls for messaging and task operations, Helmet security headers, CORS restrictions, rate limiting, input validation, Cloudinary integration, environment-based configuration, and dependency vulnerability auditing. The architecture is suitable for deployment using a separate frontend and backend hosting model, with the frontend deployable to platforms such as Vercel and the backend deployable to services such as Render or similar Node.js hosting environments.
+
+ChatSphere demonstrates how real-time web technologies can be combined with collaboration-oriented features to create more than a conventional messaging application. By connecting conversations with tasks, reminders, scheduled messages, expense tracking, notifications, and presence awareness, the system transforms everyday chat interactions into an organized digital workspace for personal, academic, and small-team collaboration.
+
+TECHNOLOGIES USED
+
+Frontend:
+- React 19
+- Vite
+- Tailwind CSS 4
+- Zustand
+- React Router
+- Socket.IO Client
+- Axios
+- Progressive Web App support
+
+Backend:
+- Node.js
+- Express.js
+- Socket.IO
+- MongoDB
+- Mongoose
+- JWT authentication
+- bcrypt password hashing
+- Helmet
+- Express Rate Limit
+- Express Validator
+- Cloudinary
+
+CORE MODULES
+
+- User registration, login, logout, and protected authentication
+- User profiles, avatars, presence, and last-seen status
+- Direct messaging and group conversations
+- Real-time message delivery
+- Typing indicators and read receipts
+- Message reactions and deletion
+- Image and file sharing
+- Chat search and paginated message history
+- Chat-to-Tasks conversion
+- Task assignment, priorities, statuses, due dates, reminders, and activity history
+- Scheduled messages
+- Expense recording and expense splitting
+- In-app notifications
+- Dark mode and light mode
+- Responsive mobile and desktop interface
+- PWA installation support
+
+KEYWORDS
+
+Real-time messaging, React, Node.js, Express.js, MongoDB, Socket.IO, task management, chat collaboration, expense sharing, scheduled messaging, JWT authentication, Cloudinary, Zustand, progressive web application, responsive web platform.

@@ -3,8 +3,9 @@ DEPARTMENT OF INFORMATION TECHNOLOGY
 MINI PROJECT – 0th REVIEW REPORT
 (B.Tech – Information Technology)
 
-Chat Sphere: A Full-Stack Real-Time Messaging Web Application with
-WebSocket Communication, Group Collaboration, and Expense Splitting
+Chat Sphere: A Secure Full-Stack Real-Time Communication and Collaboration
+Platform with Chat-to-Tasks, Group Collaboration, Expense Splitting, and
+Performance-Optimized WebSocket Communication
 
 Submitted by
 Purushotham Reddy – [Roll Number]
@@ -23,14 +24,17 @@ ANURAG UNIVERSITY
 Chat Sphere: A Full-Stack Real-Time Messaging Web Application with WebSocket
 Communication, Group Collaboration, and Expense Splitting
 
-Chat Sphere is a full-stack real-time messaging web application built on the MERN-style
-stack (React, Express, Node.js, and MongoDB) that delivers a comprehensive communication
-platform, enabling users to exchange instant text messages, share images and files via
-Cloudinary, create and manage group conversations, track online presence and message
-delivery status, split expenses within groups, and schedule messages for future delivery —
-all from a single responsive, mobile-first web dashboard powered by Socket.IO for
-bidirectional real-time communication. A background scheduler service runs server-side
-every 30 seconds to dispatch due messages and expire temporary groups automatically.
+Chat Sphere is a secure full-stack real-time communication and collaboration platform
+built on React 19, Vite, Node.js, Express, MongoDB, Mongoose, and Socket.IO. It enables
+users to exchange instant messages, share media through Cloudinary, create and manage
+direct and group conversations, track presence and delivery status, split expenses,
+schedule messages, and convert important chat messages into actionable tasks. The
+responsive web dashboard uses Zustand state management, Tailwind CSS 4, and progressive
+web application support. A background scheduler runs server-side every 30 seconds to
+dispatch due messages, deliver task reminders, and expire temporary groups automatically.
+The current implementation also includes request deduplication, stale-response
+protection, memoized message rendering, efficient pagination, and authorization checks
+across protected REST and Socket.IO operations.
 
 Department of Information Technology, Anurag University | Page 2
 
@@ -92,9 +96,9 @@ Department of Information Technology, Anurag University | Page 3
 
 The project is guided by the following specific objectives:
 
-1. To design and implement secure user registration and login using JWT (JSON Web
-   Tokens) stored in localStorage with password hashing using Bcrypt (12 salt rounds)
-   and token verification middleware on all protected API routes.
+1. To design and implement secure user registration and login using JWT authentication,
+   HTTP-only cookie support, password hashing using bcrypt with 12 salt rounds, and
+   token verification middleware on all protected API routes.
 
 2. To implement real-time bidirectional messaging using Socket.IO, enabling instant
    message delivery, delivery acknowledgments, and read receipts (single-tick,
@@ -149,6 +153,30 @@ The project is guided by the following specific objectives:
 14. To deploy the application to cloud platforms — frontend on Vercel, backend on
     Render, and database on MongoDB Atlas — ensuring zero-downtime production
     availability.
+
+15. To implement Chat-to-Tasks functionality that converts messages into actionable
+     tasks linked to conversations and optional source messages, with creators,
+     assignees, priorities, statuses, due dates, reminders, archiving, deletion,
+     activity history, and permission-aware updates.
+
+16. To deliver real-time task synchronization using task-created, task-updated,
+     task-completed, task-deleted, and task-reminder Socket.IO events so that all
+     authorized conversation members receive consistent task state.
+
+17. To improve state-management reliability by preventing duplicate requests, ignoring
+     stale responses after rapid conversation switching, guarding pagination requests,
+     deduplicating read operations, and narrowing Zustand subscriptions to required
+     state slices.
+
+18. To improve chat response speed through indexed and lean MongoDB queries,
+     parallelized message retrieval operations, optimistic message reconciliation,
+     memoized message grouping and message bubbles, and reduced unnecessary scrolling
+     and component re-rendering.
+
+19. To strengthen application security through conversation-membership authorization
+     for message reads, reactions, socket acknowledgements, wallpaper updates, task
+     operations, and other protected resources, supported by dependency vulnerability
+     audits and secure production configuration.
 
 Department of Information Technology, Anurag University | Page 4
 
@@ -241,13 +269,24 @@ a single, unified full-stack application.
 
 •  Feature Completeness Gap: Implements the full messaging lifecycle — typing
    indicators, delivery acknowledgments, read receipts, message deletion, in-chat
-   search, and conversation management — rather than basic send/receive only.
+   search, conversation management, scheduled messages, expenses, and task
+   coordination — rather than basic send/receive only.
 
 
 
 •  User Experience Gap: Provides a production-grade UI with glassmorphism design,
    dark/light themes, responsive mobile-first layout, emoji picker, voice recording,
-   and smooth animations — going beyond basic academic prototypes.
+   task dashboards, notifications, performance-aware rendering, and optimized
+   refresh behavior — going beyond basic academic prototypes.
+
+•  Collaboration Gap: Connects chat messages directly to assigned tasks, reminders,
+   priorities, due dates, and activity history, allowing communication and follow-up
+   work to remain in the same conversation context.
+
+•  Reliability and Security Gap: Adds stale-response protection, request
+   deduplication, pagination guards, membership validation, protected socket event
+   handling, rate limiting, security headers, dependency audits, and production
+   error handling to improve operational readiness.
 
 Department of Information Technology, Anurag University | Page 6
 
@@ -256,7 +295,7 @@ Department of Information Technology, Anurag University | Page 6
 6. Proposed System with Architecture
 ================================================================================
 
-The proposed system consists of five distinct layers to handle frontend presentation,
+The proposed system consists of six distinct layers to handle frontend presentation,
 backend REST APIs and WebSocket events, NoSQL data storage, cloud media services,
 and deployment pipelines. Table 6.1 summarises each layer's components and technologies.
 
@@ -264,7 +303,7 @@ Table 6.1: System Architecture Layers
 
 Layer               | Components & Technologies
 --------------------+--------------------------------------------------------------------
-Presentation Layer  | React 19 + Vite 8 SPA, Tailwind CSS v3, Zustand State Management,
+Presentation Layer  | React 19 + Vite 8 SPA, Tailwind CSS v4, Zustand State Management,
                     | React Router v7, Axios HTTP Client, React Icons, Emoji Picker React,
                     | CryptoJS (AES Encryption)
 --------------------+--------------------------------------------------------------------
@@ -273,13 +312,13 @@ Application Layer   | Node.js + Express.js REST API, Socket.IO v4 (bidirectional
                     | express-rate-limit, express-validator, cookie-parser
 --------------------+--------------------------------------------------------------------
 Data Layer          | MongoDB Atlas (Cloud NoSQL), Mongoose ODM schemas
-                    | (User, Conversation, Message, Expense, ScheduledMessage),
+                    | (User, Conversation, Message, Expense, ScheduledMessage, Task),
                     | compound indexes for efficient queries
 --------------------+--------------------------------------------------------------------
 External Services   | Cloudinary CDN for image, file, and voice message uploads
 --------------------+--------------------------------------------------------------------
 Background Services | Node.js setInterval scheduler (30-second polling) for dispatching
-                    | scheduled messages and expiring temporary groups
+                    | scheduled messages, task reminders, and expiring temporary groups
 --------------------+--------------------------------------------------------------------
 Deployment Layer    | Frontend → Vercel (SPA with rewrite rules);
                     | Backend → Render (Node.js service);
@@ -290,10 +329,10 @@ Deployment Layer    | Frontend → Vercel (SPA with rewrite rules);
 
 Module                  | Description
 ------------------------+---------------------------------------------------------------------
-Authentication          | Register/login with bcrypt (12 rounds); JWT issued and stored in
-                        | localStorage; token verification via middleware on all protected
-                        | routes; automatic session restoration on app reload; force-logout
-                        | on concurrent logins from another device.
+Authentication          | Register/login with bcrypt (12 rounds); JWT issued through
+                        | HTTP-only cookies; token verification via middleware on all
+                        | protected routes; automatic session restoration on app reload;
+                        | force-logout on concurrent logins from another device.
 ------------------------+---------------------------------------------------------------------
 Chat Dashboard          | Main application layout with a modern sidebar (conversation list
                         | with last message preview, unread badges, and search) alongside a
@@ -352,6 +391,30 @@ Message Search          | In-chat search bar (activated from chat header) with r
                         | text matching. Match counter ("1 of 5"). Up/Down navigation
                         | between matches with message highlighting and auto-scroll.
 
+Chat-to-Tasks           | Converts a message into a task from the message action menu. Tasks
+                        | retain conversation and optional source-message references, support
+                        | title, description, creator, assignee, priority, status, due date,
+                        | reminder time, activity history, archive, completion, and deletion.
+                        | TasksPanel and TaskCard provide dashboard filtering and status updates.
+                        | Socket events synchronize authorized users in real time.
+------------------------+---------------------------------------------------------------------
+Task Reminders          | The 30-second scheduler atomically claims due reminders using
+                        | reminderSentAt before emitting task:reminder. This prevents duplicate
+                        | notifications after restarts or concurrent processing.
+------------------------+---------------------------------------------------------------------
+Security and Authorization| Protected HTTP and Socket.IO operations validate authentication and
+                        | conversation membership. Authorization covers messages, reactions,
+                        | read receipts, delivery acknowledgements, wallpapers, groups, expenses,
+                        | scheduled messages, and tasks. Helmet, CORS allowlisting, rate limits,
+                        | input validation, secure cookies, and dependency audits support
+                        | production security.
+------------------------+---------------------------------------------------------------------
+State and Performance  | Focused Zustand selectors reduce unrelated renders. Conversation and
+                        | message request deduplication, stale-response rejection, pagination
+                        | guards, memoized grouping and message bubbles, lean database reads,
+                        | parallel count/query execution, and optimistic message reconciliation
+                        | improve refresh reliability and response speed.
+
 Department of Information Technology, Anurag University | Page 7
 
 
@@ -372,9 +435,9 @@ literature survey gaps identified in Section 5.
 
 7.2 System Design
 
-A layered architecture (Section 6) was designed first, followed by the API contract — six
+A layered architecture (Section 6) was designed first, followed by the API contract — seven
 route groups, each exposing REST endpoints under distinct base paths (/auth, /users,
-/conversations, /messages, /expenses, /scheduled-messages) — and the Socket.IO event
+/conversations, /messages, /expenses, /scheduled-messages, /tasks) — and the Socket.IO event
 contract (message:send, message:new, message:read, typing:start, typing:stop,
 user:online, user:offline, expense:new, expense:settled, group:expired).
 The React component hierarchy (App → ChatDashboard → Sidebar + ChatWindow, with modal
@@ -383,7 +446,7 @@ ExpensePanel, ExpenseSplitModal, and ScheduledMessagesPanel) was then mapped out
 
 7.3 Database Design
 
-Five Mongoose collections were designed, each timestamped and indexed for query
+Seven Mongoose collections were designed, each timestamped and indexed for query
 performance, summarised in Table 7.1.
 
 Table 7.1: Database Schema Overview
@@ -428,6 +491,16 @@ Message          | conversationId [ref: Conversation],                | dispatch
                  | sentMessageId [ref: Message]                       | updates status to "sent". Compound
                  |                                                    | index on (status, scheduledAt).
 
+Task             | conversationId [ref: Conversation],                | Converts a conversation item into
+                 | sourceMessageId [ref: Message], createdBy,          | an actionable work item. Stores
+                 | assignedTo [ref: User], title, description,         | creator and assignee permissions,
+                 | priority, status, dueAt, reminderAt,               | priority and status transitions,
+                 | reminderSentAt, archivedAt, completedAt,            | due dates, reminder claiming,
+                 | activity[]                                         | archive/completion timestamps, and
+                 |                                                    | activity history. Indexed by
+                 |                                                    | conversation, status, assignee,
+                 |                                                    | and reminder state.
+
 7.4 Backend Development
 
 The Express backend was implemented module-by-module:
@@ -446,7 +519,8 @@ The Express backend was implemented module-by-module:
 
 •  Message Routes (/api/messages): Fetch paginated messages per conversation,
    send messages (with Cloudinary upload for media types), mark messages as read,
-   delete messages (soft delete), upload files.
+   delete messages (soft delete), upload files, and apply membership authorization
+   to message mutations and read operations.
 
 •  Expense Routes (/api/expenses): Create expense (POST /), fetch group expenses
    (GET /:conversationId), settle a user's split (PUT /:id/settle), and fetch net
@@ -464,15 +538,32 @@ The Express backend was implemented module-by-module:
    (1) Find ScheduledMessage documents with status=pending and scheduledAt ≤ now,
    create real Message documents, emit socket events to all participants, and
    mark scheduled messages as sent.
-   (2) Find Conversation documents where groupInfo.expiresAt ≤ now and
+   (2) Find Task documents with reminderAt ≤ now and reminderSentAt unset,
+   atomically claim reminders, emit task:reminder, and prevent duplicate delivery.
+   (3) Find Conversation documents where groupInfo.expiresAt ≤ now and
    isExpired=false, mark them expired, insert a system message, and emit
    group:expired to all participants.
 
-•  Socket Event Handlers: Three event modules — chatEvents (message sending,
+•  Task Routes (/api/tasks): Create tasks from chat messages, retrieve personal
+   and conversation task lists, filter by status, priority, assignee, and search,
+   inspect task activity, update task details, change status, archive tasks, and
+   delete tasks. Every operation validates authentication, conversation membership,
+   group expiry, and task-specific permissions.
+
+•  Socket Event Handlers: Four event modules — chatEvents (message sending,
    delivery acknowledgment, read receipts, message deletion), typingEvents (start/
    stop typing broadcasts), presenceEvents (online/offline status with lastSeen
-   update) — orchestrated by socketHandler (connection lifecycle, room joining,
-   and session-based forced logout).
+   update), and task event handling — orchestrated by socketHandler (connection
+   lifecycle, authenticated room joining, membership validation, and session-based
+   forced logout).
+
+•  Performance and Consistency Controls: Frontend request maps deduplicate
+   conversation and message requests. Per-conversation request versions prevent
+   stale responses from replacing current messages after rapid chat switching.
+   Pagination has an in-flight guard, read requests are deduplicated, Zustand
+   components use focused selectors, and MessageList/MessageBubble rendering is
+   memoized. Backend message count and retrieval run in parallel and message
+   responses use lean documents for lower serialization cost.
 
 •  Middleware: JWT authentication (protectRoute), centralized error handler, rate
    limiter (on auth and upload routes), and request validation.
@@ -581,9 +672,9 @@ gradient background with decorative blur orbs. The page displays the application
 (chat bubble icon) and brand name at the top, followed by a card containing email and
 password input fields. The password field includes a show/hide toggle button. A gradient
 "Sign In" button submits the form and shows a spinner during loading. Below the form,
-a link navigates to the Signup page. Upon successful authentication, a JWT token is stored
-in localStorage, the Socket.IO connection is established, and the user is redirected to the
-Chat Dashboard.
+a link navigates to the Signup page. Upon successful authentication, the server establishes
+the authenticated HTTP-only cookie session, the Socket.IO connection is established, and the
+user is redirected to the Chat Dashboard.
 
 8.2 Signup Page (/signup)
 
@@ -593,7 +684,8 @@ Email, Password (minimum 6 characters), and Confirm Password. Real-time client-s
 validation highlights the confirm password field in red when passwords do not match, with
 an inline error message. The "Create Account" button is disabled until passwords match.
 On successful registration, the user is automatically logged in, the Socket.IO connection
-is established, and they are redirected to the Chat Dashboard.
+is established using the authenticated cookie session, and they are redirected to the Chat
+Dashboard.
 
 8.3 Chat Dashboard (/ — Main Application)
 
@@ -751,6 +843,22 @@ entire application switches to a dark colour palette with adjusted backgrounds, 
 colours, borders, and input fields — while maintaining the signature Chat Sphere green
 accent colour throughout.
 
+8.15 Tasks Panel and Create Task Modal
+
+The Tasks Panel provides a conversation-aware task dashboard accessible from the chat
+header. It displays tasks created by or assigned to the current user and supports
+filtering by status, priority, assignee, and search text. Each TaskCard presents the
+task title, description, source-message link, assignee, creator, priority badge,
+status, due date, reminder information, and activity history. Authorized users can
+change status, complete or archive tasks, update permitted fields, and delete tasks.
+
+The Create Task Modal can be opened from a message action menu or the task dashboard.
+It pre-fills task information from the selected message when applicable and allows the
+creator to set a title, description, assignee, priority, due date, reminder time, and
+conversation context. Task updates are persisted through the REST API and synchronized
+through task:created, task:updated, task:completed, task:deleted, and task:reminder
+Socket.IO events. Expired temporary groups remain readable but reject task mutations.
+
 Department of Information Technology, Anurag University | Page 9
 
 
@@ -762,7 +870,7 @@ Table 9.1: Software Requirements
 
 Component           | Specification                          | Purpose
 --------------------+----------------------------------------+----------------------------------
-Runtime             | Node.js 18 or newer                    | Required to run Express backend
+Runtime             | Node.js 20 or newer                    | Required to run Express backend
                     |                                        | and Vite frontend build tooling.
 --------------------+----------------------------------------+----------------------------------
 Backend Framework   | Express.js (Node.js)                   | Handles REST API requests, route
@@ -785,15 +893,16 @@ Media Storage       | Cloudinary CDN                         | Cloud storage for
                     |                                        | and voice message uploads.
 --------------------+----------------------------------------+----------------------------------
 State Management    | Zustand v5                             | Lightweight React state management
-                    |                                        | for auth, chat, theme, and
-                    |                                        | notification stores.
+                    |                                        | for auth, chat, task, expense,
+                    |                                        | theme, and notification stores.
 --------------------+----------------------------------------+----------------------------------
-Styling & Icons     | Tailwind CSS v3, React Icons,          | Utility-first CSS framework,
+Styling & Icons     | Tailwind CSS v4, React Icons,          | Utility-first CSS framework,
                     | Emoji Picker React                     | icon library, and emoji picker.
 --------------------+----------------------------------------+----------------------------------
 Security            | Helmet.js, express-rate-limit,         | HTTP security headers, API rate
-                    | express-validator, CryptoJS            | limiting, input validation, and
-                    |                                        | AES message encryption.
+                    | express-validator, secure cookies,     | limiting, input validation,
+                    | CryptoJS, npm audit                   | AES message encryption, and
+                    |                                        | dependency vulnerability checks.
 --------------------+----------------------------------------+----------------------------------
 
 Version Control     | Git and GitHub                         | Source-code management and

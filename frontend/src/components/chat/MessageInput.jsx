@@ -371,11 +371,11 @@ const MessageInput = () => {
       )}
 
       {/* Input row */}
-      <div className="flex items-end gap-2 p-3">
+      <div className="flex items-end gap-1.5 sm:gap-2 p-2.5 sm:p-3 pb-[calc(0.625rem+env(safe-area-inset-bottom))] sm:pb-3">
         {/* Emoji button */}
         <button
           onClick={() => { setShowEmoji(!showEmoji); setShowAttach(false); }}
-          className="p-2.5 rounded-full hover:bg-gray-200 dark:hover:bg-dark-4 transition-colors flex-shrink-0"
+          className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-dark-4 transition-colors flex-shrink-0"
         >
           <IoHappy className="w-6 h-6 text-gray-500 dark:text-gray-400" />
         </button>
@@ -384,7 +384,7 @@ const MessageInput = () => {
         <div className="relative flex-shrink-0">
           <button
             onClick={() => { setShowAttach(!showAttach); setShowEmoji(false); }}
-            className="p-2.5 rounded-full hover:bg-gray-200 dark:hover:bg-dark-4 transition-colors"
+            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-dark-4 transition-colors"
           >
             <IoAttach className="w-6 h-6 text-gray-500 dark:text-gray-400 rotate-45" />
           </button>
@@ -413,7 +413,7 @@ const MessageInput = () => {
         <input ref={fileInputRef} type="file" className="hidden" onChange={(e) => handleFileSelect(e, "file")} />
 
         {/* Text input */}
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <textarea
             ref={inputRef}
             id="message-input"
@@ -423,7 +423,7 @@ const MessageInput = () => {
             onPaste={handlePaste}
             placeholder="Type a message"
             rows={1}
-            className="w-full px-4 py-3 bg-white dark:bg-dark-3 rounded-2xl text-sm text-gray-900 dark:text-white placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-chatsphere-500/30 max-h-32 overflow-y-auto transition-all"
+            className="w-full min-w-0 px-3 sm:px-4 py-3 bg-white dark:bg-dark-3 rounded-2xl text-base sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-chatsphere-500/30 max-h-32 overflow-y-auto transition-all"
             style={{ minHeight: "44px" }}
             onInput={(e) => {
               e.target.style.height = "44px";
@@ -436,7 +436,7 @@ const MessageInput = () => {
         <button
           type="button"
           onClick={handleOpenSchedule}
-          className={`p-2.5 rounded-full transition-colors flex-shrink-0 ${
+          className={`hidden sm:block p-2.5 rounded-full transition-colors flex-shrink-0 ${
             showSchedule
               ? "bg-chatsphere-500/10 text-chatsphere-600 dark:text-chatsphere-400"
               : "hover:bg-gray-200 dark:hover:bg-dark-4 text-gray-500 dark:text-gray-400"

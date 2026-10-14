@@ -41,13 +41,13 @@ const ChatDashboard = () => {
   }, [activeConversation, setShowMobileSidebar]);
 
   return (
-    <div className="h-screen flex bg-[#F4F5F7] dark:bg-dark-1 overflow-hidden">
+    <div className="h-[100dvh] min-h-0 flex bg-[#F4F5F7] dark:bg-dark-1 overflow-hidden">
       {/* Top header bar */}
       <div className="absolute top-0 left-0 right-0 h-32 header-gradient z-0" />
 
       {/* Main container */}
-      <div className="relative flex w-full max-w-[1600px] mx-auto h-full py-4 px-2 md:py-6 md:px-6 z-10">
-        <div className="flex w-full bg-white dark:bg-dark-2 rounded shadow-2xl overflow-hidden border border-gray-200/50 dark:border-dark-4/50">
+      <div className="relative flex w-full max-w-[1600px] mx-auto h-full min-h-0 py-0 px-0 md:py-6 md:px-6 z-10">
+        <div className="flex w-full min-h-0 bg-white dark:bg-dark-2 rounded-none md:rounded shadow-2xl overflow-hidden border-0 md:border border-gray-200/50 dark:border-dark-4/50">
           {/* Sidebar */}
           <div
             className={`${

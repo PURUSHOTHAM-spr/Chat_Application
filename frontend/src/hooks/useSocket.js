@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { getSocket, isInGracePeriod } from "../lib/socket";
+import { getSocket, isInGracePeriod, onSocketCreated } from "../lib/socket";
 import { SOCKET_EVENTS } from "../constants";
 import useChatStore from "../store/useChatStore";
 import useNotificationStore from "../store/useNotificationStore";
@@ -36,14 +36,11 @@ const useSocket = () => {
   const { handleTaskEvent, handleTaskDeleted } = useTaskStore();
 
   useEffect(() => {
-    const socket = getSocket();
-    if (!socket) return;
-
     // --- Message events ---
     const handleNewMessage = ({ message, conversationId }) => {
       addIncomingMessage(message, conversationId);
       // Auto-deliver acknowledgment
-      socket.emit(SOCKET_EVENTS.MESSAGE_DELIVERED, { messageId: message._id });
+      getSocket()?.emit(SOCKET_EVENTS.MESSAGE_DELIVERED, { messageId: message._id });
     };
 
     const handleMessageRead = ({ conversationId, readBy }) => {
@@ -134,32 +131,32 @@ const useSocket = () => {
     const onTaskEvent = ({ task }) => handleTaskEvent(task);
     const onTaskDeleted = ({ task }) => handleTaskDeleted(task?._id);
 
-    // Register all listeners
-    socket.on(SOCKET_EVENTS.MESSAGE_NEW, handleNewMessage);
-    socket.on(SOCKET_EVENTS.MESSAGE_READ, handleMessageRead);
-    socket.on(SOCKET_EVENTS.MESSAGE_DELETED, handleDeleted);
-    socket.on(SOCKET_EVENTS.USER_ONLINE, handleUserOnline);
-    socket.on(SOCKET_EVENTS.USER_OFFLINE, handleUserOffline);
-    socket.on(SOCKET_EVENTS.TYPING_START, handleTypingStart);
-    socket.on(SOCKET_EVENTS.TYPING_STOP, handleTypingStop);
-    socket.on(SOCKET_EVENTS.CONVERSATION_NEW, handleNewConversation);
-    socket.on(SOCKET_EVENTS.GROUP_UPDATED, handleGroupUpdated);
-    socket.on(SOCKET_EVENTS.GROUP_REMOVED, handleGroupRemoved);
-    socket.on(SOCKET_EVENTS.GROUP_EXPIRED, handleExpired);
-    socket.on(SOCKET_EVENTS.NOTIFICATION_NEW, handleNotification);
-    socket.on(SOCKET_EVENTS.EXPENSE_NEW, onExpenseNew);
-    socket.on(SOCKET_EVENTS.EXPENSE_SETTLED, onExpenseSettled);
-    socket.on("session:expired", handleSessionExpired);
-    socket.on("user:updated", handleUserUpdated);
-    socket.on("message:reaction", handleMessageReaction);
-    socket.on(SOCKET_EVENTS.TASK_CREATED, onTaskEvent);
-    socket.on(SOCKET_EVENTS.TASK_UPDATED, onTaskEvent);
-    socket.on(SOCKET_EVENTS.TASK_COMPLETED, onTaskEvent);
-    socket.on(SOCKET_EVENTS.TASK_REMINDER, onTaskEvent);
-    socket.on(SOCKET_EVENTS.TASK_DELETED, onTaskDeleted);
+    const attachListeners = (socket) => {
+      socket.on(SOCKET_EVENTS.MESSAGE_NEW, handleNewMessage);
+      socket.on(SOCKET_EVENTS.MESSAGE_READ, handleMessageRead);
+      socket.on(SOCKET_EVENTS.MESSAGE_DELETED, handleDeleted);
+      socket.on(SOCKET_EVENTS.USER_ONLINE, handleUserOnline);
+      socket.on(SOCKET_EVENTS.USER_OFFLINE, handleUserOffline);
+      socket.on(SOCKET_EVENTS.TYPING_START, handleTypingStart);
+      socket.on(SOCKET_EVENTS.TYPING_STOP, handleTypingStop);
+      socket.on(SOCKET_EVENTS.CONVERSATION_NEW, handleNewConversation);
+      socket.on(SOCKET_EVENTS.GROUP_UPDATED, handleGroupUpdated);
+      socket.on(SOCKET_EVENTS.GROUP_REMOVED, handleGroupRemoved);
+      socket.on(SOCKET_EVENTS.GROUP_EXPIRED, handleExpired);
+      socket.on(SOCKET_EVENTS.NOTIFICATION_NEW, handleNotification);
+      socket.on(SOCKET_EVENTS.EXPENSE_NEW, onExpenseNew);
+      socket.on(SOCKET_EVENTS.EXPENSE_SETTLED, onExpenseSettled);
+      socket.on("session:expired", handleSessionExpired);
+      socket.on("user:updated", handleUserUpdated);
+      socket.on("message:reaction", handleMessageReaction);
+      socket.on(SOCKET_EVENTS.TASK_CREATED, onTaskEvent);
+      socket.on(SOCKET_EVENTS.TASK_UPDATED, onTaskEvent);
+      socket.on(SOCKET_EVENTS.TASK_COMPLETED, onTaskEvent);
+      socket.on(SOCKET_EVENTS.TASK_REMINDER, onTaskEvent);
+      socket.on(SOCKET_EVENTS.TASK_DELETED, onTaskDeleted);
+    };
 
-    // Cleanup on unmount
-    return () => {
+    const detachListeners = (socket) => {
       socket.off(SOCKET_EVENTS.MESSAGE_NEW, handleNewMessage);
       socket.off(SOCKET_EVENTS.MESSAGE_READ, handleMessageRead);
       socket.off(SOCKET_EVENTS.MESSAGE_DELETED, handleDeleted);
@@ -182,6 +179,18 @@ const useSocket = () => {
       socket.off(SOCKET_EVENTS.TASK_COMPLETED, onTaskEvent);
       socket.off(SOCKET_EVENTS.TASK_REMINDER, onTaskEvent);
       socket.off(SOCKET_EVENTS.TASK_DELETED, onTaskDeleted);
+    };
+
+    const socket = getSocket();
+    if (socket) attachListeners(socket);
+    const removeSocketCreatedListener = onSocketCreated((createdSocket) => {
+      if (createdSocket !== socket) attachListeners(createdSocket);
+    });
+
+    return () => {
+      const currentSocket = getSocket();
+      if (currentSocket) detachListeners(currentSocket);
+      removeSocketCreatedListener();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

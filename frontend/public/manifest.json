@@ -1,7 +1,7 @@
 {
-  "name": "ChatSphere",
-  "short_name": "ChatSphere",
-  "description": "Real-time messaging application",
+  "name": "Chat Sphere",
+  "short_name": "Chat Sphere",
+  "description": "Chat Sphere — a real-time messaging application for connecting with friends and teams.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#171B22",

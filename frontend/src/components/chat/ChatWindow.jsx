@@ -34,11 +34,11 @@ const ChatWindow = () => {
   }, [activeConversation?._id]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       <ChatHeader onBack={handleBack} onSearchChange={handleSearchChange} />
 
       {/* Chat background with pattern */}
-      <div className="flex-1 overflow-hidden chat-bg-pattern relative"
+      <div className="flex-1 min-h-0 overflow-hidden chat-bg-pattern relative"
         style={
           activeConversation?.wallpaper
             ? {
@@ -66,4 +66,3 @@ const ChatWindow = () => {
 };
 
 export default ChatWindow;
-
