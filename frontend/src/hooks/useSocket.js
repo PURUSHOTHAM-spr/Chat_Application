@@ -28,6 +28,7 @@ const useSocket = () => {
     updateGroup,
     handleRemoveGroup,
     handleGroupExpired,
+    fetchMessages,
   } = useChatStore();
 
   const { addNotification } = useNotificationStore();
@@ -131,7 +132,16 @@ const useSocket = () => {
     const onTaskEvent = ({ task }) => handleTaskEvent(task);
     const onTaskDeleted = ({ task }) => handleTaskDeleted(task?._id);
 
+    const syncChatState = () => {
+      fetchConversations();
+      const currentConversation = useChatStore.getState().activeConversation;
+      if (currentConversation?._id) {
+        fetchMessages(currentConversation._id, 1);
+      }
+    };
+
     const attachListeners = (socket) => {
+      socket.on(SOCKET_EVENTS.CONNECT, syncChatState);
       socket.on(SOCKET_EVENTS.MESSAGE_NEW, handleNewMessage);
       socket.on(SOCKET_EVENTS.MESSAGE_READ, handleMessageRead);
       socket.on(SOCKET_EVENTS.MESSAGE_DELETED, handleDeleted);
@@ -157,6 +167,7 @@ const useSocket = () => {
     };
 
     const detachListeners = (socket) => {
+      socket.off(SOCKET_EVENTS.CONNECT, syncChatState);
       socket.off(SOCKET_EVENTS.MESSAGE_NEW, handleNewMessage);
       socket.off(SOCKET_EVENTS.MESSAGE_READ, handleMessageRead);
       socket.off(SOCKET_EVENTS.MESSAGE_DELETED, handleDeleted);
@@ -182,7 +193,10 @@ const useSocket = () => {
     };
 
     const socket = getSocket();
-    if (socket) attachListeners(socket);
+    if (socket) {
+      attachListeners(socket);
+      if (socket.connected) syncChatState();
+    }
     const removeSocketCreatedListener = onSocketCreated((createdSocket) => {
       if (createdSocket !== socket) attachListeners(createdSocket);
     });
