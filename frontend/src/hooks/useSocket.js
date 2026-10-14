@@ -140,7 +140,10 @@ const useSocket = () => {
       }
     };
 
+    const attachedSockets = new Set();
     const attachListeners = (socket) => {
+      if (!socket || attachedSockets.has(socket)) return;
+      attachedSockets.add(socket);
       socket.on(SOCKET_EVENTS.CONNECT, syncChatState);
       socket.on(SOCKET_EVENTS.MESSAGE_NEW, handleNewMessage);
       socket.on(SOCKET_EVENTS.MESSAGE_READ, handleMessageRead);
@@ -167,6 +170,7 @@ const useSocket = () => {
     };
 
     const detachListeners = (socket) => {
+      if (!socket || !attachedSockets.has(socket)) return;
       socket.off(SOCKET_EVENTS.CONNECT, syncChatState);
       socket.off(SOCKET_EVENTS.MESSAGE_NEW, handleNewMessage);
       socket.off(SOCKET_EVENTS.MESSAGE_READ, handleMessageRead);
@@ -190,20 +194,21 @@ const useSocket = () => {
       socket.off(SOCKET_EVENTS.TASK_COMPLETED, onTaskEvent);
       socket.off(SOCKET_EVENTS.TASK_REMINDER, onTaskEvent);
       socket.off(SOCKET_EVENTS.TASK_DELETED, onTaskDeleted);
+      attachedSockets.delete(socket);
     };
 
-    const socket = getSocket();
-    if (socket) {
-      attachListeners(socket);
-      if (socket.connected) syncChatState();
+    const currentSocket = getSocket();
+    if (currentSocket) {
+      attachListeners(currentSocket);
+      if (currentSocket.connected) syncChatState();
     }
     const removeSocketCreatedListener = onSocketCreated((createdSocket) => {
-      if (createdSocket !== socket) attachListeners(createdSocket);
+      attachListeners(createdSocket);
+      if (createdSocket.connected) syncChatState();
     });
 
     return () => {
-      const currentSocket = getSocket();
-      if (currentSocket) detachListeners(currentSocket);
+      attachedSockets.forEach(detachListeners);
       removeSocketCreatedListener();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

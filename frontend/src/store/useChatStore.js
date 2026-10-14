@@ -9,6 +9,9 @@ const messageRequestVersions = new Map();
 const readRequests = new Set();
 let nextMessageRequestVersion = 0;
 
+const getMessageId = (message) => String(message?._id || "");
+const getConversationId = (value) => String(value?._id || value || "");
+
 /**
  * Chat store — manages conversations, messages, active chat, and online users.
  * This is the core state for the entire chat interface.
@@ -83,10 +86,29 @@ const useChatStore = create((set, get) => ({
         if (!isCurrentConversation || !isCurrentRequest) return null;
 
         if (page === 1) {
-          set({ messages: newMessages, pagination, isLoadingMessages: false });
+          // A live message can arrive while this request is in flight. Keep it
+          // instead of letting the response roll the open chat back in time.
+          const messagesById = new Map(
+            state.messages.map((message) => [getMessageId(message), message])
+          );
+          newMessages.forEach((message) => {
+            messagesById.set(getMessageId(message), message);
+          });
+          const mergedMessages = [...messagesById.values()].sort(
+            (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+          );
+          set({ messages: mergedMessages, pagination, isLoadingMessages: false });
         } else {
           set((current) => ({
-            messages: [...newMessages, ...current.messages],
+            messages: [
+              ...newMessages,
+              ...current.messages.filter(
+                (message) =>
+                  !newMessages.some(
+                    (newMessage) => getMessageId(newMessage) === getMessageId(message)
+                  )
+              ),
+            ],
             pagination,
             isLoadingMessages: false,
           }));
@@ -178,18 +200,23 @@ const useChatStore = create((set, get) => ({
    * Add a new incoming message from Socket.IO.
    */
   addIncomingMessage: (message, conversationId) => {
-    const { activeConversation, messages } = get();
-    const incomingConversationId = String(conversationId || message.conversationId || "");
+    const incomingConversationId = getConversationId(
+      conversationId || message.conversationId
+    );
 
     // If this message is for the active conversation, add it to messages
-    if (String(activeConversation?._id || "") === incomingConversationId) {
-      const exists = messages.some((m) => m._id === message._id);
-      if (!exists) {
-        set((state) => ({
-          messages: [...state.messages, message],
-        }));
+    set((state) => {
+      if (getConversationId(state.activeConversation) !== incomingConversationId) {
+        return state;
       }
-    }
+
+      const messageId = getMessageId(message);
+      if (state.messages.some((existingMessage) => getMessageId(existingMessage) === messageId)) {
+        return state;
+      }
+
+      return { messages: [...state.messages, message] };
+    });
 
     // Update conversation list
     get().updateConversationLastMessage(incomingConversationId, message);
