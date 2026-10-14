@@ -12,6 +12,7 @@ import conversationRoutes from "./routes/conversationRoutes.js";
 import messageRoutes from "./routes/messageRoutes.js";
 import scheduledRoutes from "./routes/scheduledRoutes.js";
 import expenseRoutes from "./routes/expenseRoutes.js";
+import taskRoutes from "./routes/taskRoutes.js";
 
 const app = express();
 
@@ -43,6 +44,7 @@ app.use("/api/conversations", conversationRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/scheduled-messages", scheduledRoutes);
 app.use("/api/expenses", expenseRoutes);
+app.use("/api/tasks", taskRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {

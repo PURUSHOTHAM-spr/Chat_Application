@@ -2,6 +2,7 @@ import ScheduledMessage from "../models/ScheduledMessage.js";
 import Message from "../models/Message.js";
 import Conversation from "../models/Conversation.js";
 import User from "../models/User.js";
+import Task from "../models/Task.js";
 import { getIO } from "../config/socket.js";
 
 /**
@@ -183,6 +184,51 @@ const processExpiredGroups = async () => {
 };
 
 /**
+ * Claim due reminders atomically so multiple server instances cannot deliver
+ * the same reminder. A claimed reminder is marked before emitting the event.
+ */
+const processTaskReminders = async () => {
+  try {
+    const now = new Date();
+    for (let i = 0; i < 50; i += 1) {
+      const task = await Task.findOneAndUpdate(
+        {
+          reminderAt: { $lte: now },
+          reminderSentAt: null,
+          archivedAt: null,
+          status: { $nin: ["completed", "cancelled"] },
+        },
+        { $set: { reminderSentAt: now } },
+        { new: true }
+      );
+      if (!task) break;
+
+      const conversation = await Conversation.findById(task.conversationId);
+      if (!conversation || isTaskConversationExpired(conversation)) continue;
+      const io = getIO();
+      io.to(task.assignedTo.toString()).emit("task:reminder", {
+        task,
+        conversationId: conversation._id.toString(),
+      });
+      io.to(task.assignedTo.toString()).emit("notification:new", {
+        type: "task_reminder",
+        title: "Task reminder",
+        body: task.title,
+        conversationId: conversation._id,
+        taskId: task._id,
+      });
+    }
+  } catch (error) {
+    console.error("Scheduler — processTaskReminders error:", error);
+  }
+};
+
+const isTaskConversationExpired = (conversation) =>
+  conversation.type === "group" &&
+  (conversation.groupInfo?.isExpired ||
+    (conversation.groupInfo?.expiresAt && conversation.groupInfo.expiresAt <= new Date()));
+
+/**
  * Start the background scheduler. Call once from server.js after DB is connected.
  * Runs every 30 seconds.
  */
@@ -194,11 +240,13 @@ export const startScheduler = () => {
   // Run immediately on startup
   processScheduledMessages();
   processExpiredGroups();
+  processTaskReminders();
 
   // Then run every 30 seconds
   schedulerInterval = setInterval(() => {
     processScheduledMessages();
     processExpiredGroups();
+    processTaskReminders();
   }, 30000);
 
   console.log("🔄 Background scheduler started (30s interval)");
