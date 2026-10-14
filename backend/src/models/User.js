@@ -30,7 +30,7 @@ const userSchema = new mongoose.Schema(
     },
     about: {
       type: String,
-      default: "Hey there! I am using WhatsApp",
+      default: "Hey there! I am using chatsphere",
       maxlength: [150, "About cannot exceed 150 characters"],
     },
     lastSeen: {
