@@ -179,9 +179,10 @@ const useChatStore = create((set, get) => ({
    */
   addIncomingMessage: (message, conversationId) => {
     const { activeConversation, messages } = get();
+    const incomingConversationId = String(conversationId || message.conversationId || "");
 
     // If this message is for the active conversation, add it to messages
-    if (activeConversation?._id === conversationId) {
+    if (String(activeConversation?._id || "") === incomingConversationId) {
       const exists = messages.some((m) => m._id === message._id);
       if (!exists) {
         set((state) => ({
@@ -191,7 +192,7 @@ const useChatStore = create((set, get) => ({
     }
 
     // Update conversation list
-    get().updateConversationLastMessage(conversationId, message);
+    get().updateConversationLastMessage(incomingConversationId, message);
   },
 
   /**
@@ -199,11 +200,12 @@ const useChatStore = create((set, get) => ({
    */
   updateConversationLastMessage: (conversationId, message) => {
     const currentUser = useAuthStore.getState().user;
+    const targetConversationId = String(conversationId || message.conversationId || "");
 
     set((state) => {
       const updated = state.conversations.map((conv) => {
-        if (conv._id === conversationId) {
-          const isActive = state.activeConversation?._id === conversationId;
+        if (String(conv._id) === targetConversationId) {
+          const isActive = String(state.activeConversation?._id || "") === targetConversationId;
           
           let newUnreadCount = { ...conv.unreadCount };
           if (!isActive && currentUser) {

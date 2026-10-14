@@ -436,7 +436,7 @@ const MessageInput = () => {
         <button
           type="button"
           onClick={handleOpenSchedule}
-          className={`hidden sm:block p-2.5 rounded-full transition-colors flex-shrink-0 ${
+          className={`p-2 sm:p-2.5 rounded-full transition-colors flex-shrink-0 ${
             showSchedule
               ? "bg-chatsphere-500/10 text-chatsphere-600 dark:text-chatsphere-400"
               : "hover:bg-gray-200 dark:hover:bg-dark-4 text-gray-500 dark:text-gray-400"
