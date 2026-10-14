@@ -19,6 +19,12 @@ export const initializeSocket = (httpServer) => {
       ].filter(Boolean),
       credentials: true,
     },
+    // Retain packets briefly so a transient Render/WebSocket interruption
+    // does not require the active conversation to be reopened.
+    connectionStateRecovery: {
+      maxDisconnectionDuration: 2 * 60 * 1000,
+      skipMiddlewares: false,
+    },
     pingTimeout: 60000,
   });
 

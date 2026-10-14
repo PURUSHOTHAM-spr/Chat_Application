@@ -29,7 +29,16 @@ export const onSocketCreated = (fn) => {
  * Returns the existing connection if already connected.
  */
 export const connectSocket = (token) => {
-  if (socket?.connected) return socket;
+  // Reuse a socket while it is connecting or reconnecting as well. Creating
+  // another client during that window makes the server expire the first
+  // session and can produce a connect/disconnect loop.
+  if (socket) {
+    if (socket.auth?.token !== token) {
+      socket.auth = { token };
+      if (!socket.connected) socket.connect();
+    }
+    return socket;
+  }
 
   // Set grace period before connecting
   connectionGracePeriod = true;

@@ -2,6 +2,8 @@ import { create } from "zustand";
 import api from "../lib/axios";
 import toast from "react-hot-toast";
 import useAuthStore from "./useAuthStore";
+import { getSocket } from "../lib/socket";
+import { SOCKET_EVENTS } from "../constants";
 
 const conversationRequests = new Map();
 const messageRequests = new Map();
@@ -167,8 +169,32 @@ const useChatStore = create((set, get) => ({
     get().updateConversationLastMessage(data.conversationId, optimisticMessage);
 
     try {
-      const res = await api.post("/messages", data);
-      const serverMessage = res.data.message;
+      const socket = getSocket();
+      let serverMessage;
+
+      if (socket?.connected) {
+        const result = await new Promise((resolve, reject) => {
+          socket.timeout(15000).emit(
+            SOCKET_EVENTS.MESSAGE_SEND,
+            { ...data, tempId },
+            (error, response) => {
+              if (error) {
+                reject(error);
+                return;
+              }
+              if (response?.error) {
+                reject(new Error(response.error));
+                return;
+              }
+              resolve(response);
+            }
+          );
+        });
+        serverMessage = result.message;
+      } else {
+        const res = await api.post("/messages", data);
+        serverMessage = res.data.message;
+      }
 
       // Replace optimistic message with real message
       set((state) => ({

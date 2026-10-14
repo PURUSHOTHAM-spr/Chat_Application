@@ -9,7 +9,8 @@ const chatEvents = (socket) => {
   const io = getIO();
 
   // Handle sending a message via socket (real-time path)
-  socket.on("message:send", async (data) => {
+  socket.on("message:send", async (data, acknowledge) => {
+    const ack = typeof acknowledge === "function" ? acknowledge : () => {};
     try {
       const { conversationId, content, type = "text", tempId, fileName, fileSize } = data;
 
@@ -20,7 +21,8 @@ const chatEvents = (socket) => {
       });
 
       if (!conversation) {
-        return socket.emit("error", { message: "Conversation not found" });
+        ack({ error: "Conversation not found" });
+        return;
       }
 
       // Create message in database
@@ -57,6 +59,7 @@ const chatEvents = (socket) => {
 
       // Confirm message sent to sender (with tempId for optimistic UI matching)
       socket.emit("message:sent", { message, tempId });
+      ack({ message, tempId });
 
       // Send message to all other participants
       conversation.participants.forEach((pId) => {
@@ -79,7 +82,7 @@ const chatEvents = (socket) => {
       });
     } catch (error) {
       console.error("message:send error:", error);
-      socket.emit("error", { message: "Failed to send message" });
+      ack({ error: "Failed to send message" });
     }
   });
 
