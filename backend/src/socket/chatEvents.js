@@ -96,7 +96,7 @@ const chatEvents = (socket) => {
       const message = await Message.findByIdAndUpdate(
         messageId,
         { status: "delivered" },
-        { new: true }
+        { returnDocument: "after" }
       );
       if (message) {
         io.to(message.sender.toString()).emit("message:status", {

@@ -199,7 +199,7 @@ const processTaskReminders = async () => {
           status: { $nin: ["completed", "cancelled"] },
         },
         { $set: { reminderSentAt: now } },
-        { new: true }
+        { returnDocument: "after" }
       );
       if (!task) break;
 

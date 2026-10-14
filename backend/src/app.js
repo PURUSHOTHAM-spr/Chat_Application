@@ -16,6 +16,11 @@ import taskRoutes from "./routes/taskRoutes.js";
 
 const app = express();
 
+// Render places one trusted reverse proxy in front of the web service.
+// Trusting exactly one hop lets Express and express-rate-limit use the
+// forwarded client IP without accepting arbitrary client-supplied hops.
+app.set("trust proxy", process.env.NODE_ENV === "production" ? 1 : false);
+
 // Security middleware
 app.use(helmet());
 app.use(

@@ -50,7 +50,7 @@ export const updateProfile = async (req, res, next) => {
     if (about !== undefined) updates.about = about;
 
     const user = await User.findByIdAndUpdate(req.user._id, updates, {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     });
 
@@ -92,7 +92,7 @@ export const updateAvatar = async (req, res, next) => {
     const user = await User.findByIdAndUpdate(
       req.user._id,
       { avatar: result.secure_url },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     const io = getIO();
